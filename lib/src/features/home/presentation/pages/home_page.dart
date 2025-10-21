@@ -70,7 +70,7 @@ class _HeroSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hola, bienvenido a prueba_itau',
+          'Hola, bienvenido a Prueba itau',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700,
             color: theme.colorScheme.primary,
@@ -197,14 +197,15 @@ class _ShortcutGrid extends StatelessWidget {
       ),
     ];
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMedium = screenWidth >= 720;
-    final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 1);
-    final aspectRatio = isWide
-        ? 1.2
-        : (isMedium
-            ? 1.8
-            : 3.4);
+  final screenWidth = MediaQuery.of(context).size.width;
+  final isMedium = screenWidth >= 720;
+  final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 1);
+  // Ajuste de aspect ratio para evitar overflow vertical en tarjetas
+  final aspectRatio = isWide
+    ? 1.15
+    : (isMedium
+      ? 1.45
+      : 2.1);
 
     return GridView.builder(
       shrinkWrap: true,
@@ -240,35 +241,39 @@ class _ShortcutTile extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-              child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  color: theme.colorScheme.primary,
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             Text(
               title,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const Spacer(),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.arrow_forward_rounded),
-                color: theme.colorScheme.primary,
+            Flexible(
+              child: Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

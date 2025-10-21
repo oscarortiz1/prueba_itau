@@ -15,10 +15,19 @@ class RegistrationPage extends StatelessWidget {
       listener: (context, state) {
         final theme = Theme.of(context);
         if (state.status == RegistrationStatus.success) {
+          final successBackground = Colors.green.shade600;
+          final successForeground = Colors.white;
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              const SnackBar(content: Text('Registro exitoso. Ahora puedes iniciar sesion.')),
+              SnackBar(
+                content: Text(
+                  'Registro exitoso. Ahora puedes iniciar sesion.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: successForeground),
+                ),
+                backgroundColor: successBackground,
+                behavior: SnackBarBehavior.floating,
+              ),
             );
           context.goNamed(AppRouteName.login);
         } else if (state.status == RegistrationStatus.failure && state.errorMessage != null) {
@@ -74,15 +83,33 @@ class _EmailField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RegistrationBloc, RegistrationState>(
-      buildWhen: (previous, current) => previous.email != current.email,
+      buildWhen: (previous, current) => previous.email != current.email || previous.status != current.status || previous.errorMessage != current.errorMessage,
       builder: (context, state) {
+        String? errorText;
+        if (state.status == RegistrationStatus.failure) {
+          if (state.email.isEmpty) {
+            errorText = 'Requerido';
+          } else if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+            errorText = state.errorMessage;
+          }
+        }
+
         return TextField(
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Correo electronico',
-            prefixIcon: Icon(Icons.mail_outline),
+            prefixIcon: const Icon(Icons.mail_outline),
             filled: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            errorText: errorText,
+            border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+            ),
           ),
           onChanged: (value) => context
               .read<RegistrationBloc>()
@@ -99,15 +126,35 @@ class _PasswordField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RegistrationBloc, RegistrationState>(
-      buildWhen: (previous, current) => previous.password != current.password,
+      buildWhen: (previous, current) => previous.password != current.password || previous.status != current.status || previous.errorMessage != current.errorMessage,
       builder: (context, state) {
+        String? errorText;
+        if (state.status == RegistrationStatus.failure) {
+          if (state.password.isEmpty) {
+            errorText = 'Requerido';
+          } else if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+            if (state.errorMessage!.toLowerCase().contains('contrasena')) {
+              errorText = state.errorMessage;
+            }
+          }
+        }
+
         return TextField(
           obscureText: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Contraseña',
-            prefixIcon: Icon(Icons.lock_outline),
+            prefixIcon: const Icon(Icons.lock_outline),
             filled: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            errorText: errorText,
+            border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+            ),
           ),
           onChanged: (value) => context
               .read<RegistrationBloc>()
@@ -124,15 +171,33 @@ class _ConfirmPasswordField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RegistrationBloc, RegistrationState>(
-      buildWhen: (previous, current) => previous.confirmPassword != current.confirmPassword,
+      buildWhen: (previous, current) => previous.confirmPassword != current.confirmPassword || previous.status != current.status || previous.errorMessage != current.errorMessage,
       builder: (context, state) {
+        String? errorText;
+        if (state.status == RegistrationStatus.failure) {
+          if (state.confirmPassword.isEmpty) {
+            errorText = 'Requerido';
+          } else if (state.password != state.confirmPassword) {
+            errorText = 'No coinciden';
+          }
+        }
+
         return TextField(
           obscureText: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Confirmar Contraseña',
-            prefixIcon: Icon(Icons.verified_user_outlined),
+            prefixIcon: const Icon(Icons.verified_user_outlined),
             filled: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            errorText: errorText,
+            border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+            ),
           ),
           onChanged: (value) => context
               .read<RegistrationBloc>()

@@ -67,15 +67,34 @@ class _EmailField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LoginBloc, LoginState>(
-      buildWhen: (previous, current) => previous.email != current.email,
+      buildWhen: (previous, current) => previous.email != current.email || previous.status != current.status || previous.errorMessage != current.errorMessage,
       builder: (context, state) {
+        String? errorText;
+        if (state.status == LoginStatus.failure) {
+          if (state.email.isEmpty) {
+            errorText = 'Requerido';
+          } else if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+            // show server/auth error on the field as well
+            errorText = state.errorMessage;
+          }
+        }
+
         return TextField(
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Correo electronico',
-            prefixIcon: Icon(Icons.mail_outline),
+            prefixIcon: const Icon(Icons.mail_outline),
             filled: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            errorText: errorText,
+            border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+            ),
           ),
           onChanged: (value) =>
               context.read<LoginBloc>().add(LoginEmailChanged(value.trim())),
@@ -91,15 +110,36 @@ class _PasswordField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LoginBloc, LoginState>(
-      buildWhen: (previous, current) => previous.password != current.password,
+      buildWhen: (previous, current) => previous.password != current.password || previous.status != current.status || previous.errorMessage != current.errorMessage,
       builder: (context, state) {
+        String? errorText;
+        if (state.status == LoginStatus.failure) {
+          if (state.password.isEmpty) {
+            errorText = 'Requerido';
+          } else if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+            // avoid duplicating message on both fields unless specific
+            if (state.errorMessage!.toLowerCase().contains('contrasena') || state.errorMessage!.toLowerCase().contains('credenciales')) {
+              errorText = state.errorMessage;
+            }
+          }
+        }
+
         return TextField(
           obscureText: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Contraseña',
-            prefixIcon: Icon(Icons.lock_outline),
+            prefixIcon: const Icon(Icons.lock_outline),
             filled: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            errorText: errorText,
+            border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(Radius.circular(14)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+            ),
           ),
           onChanged: (value) =>
               context.read<LoginBloc>().add(LoginPasswordChanged(value.trim())),
