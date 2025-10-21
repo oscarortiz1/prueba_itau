@@ -120,8 +120,15 @@ class _EmailField extends StatelessWidget {
   }
 }
 
-class _PasswordField extends StatelessWidget {
+class _PasswordField extends StatefulWidget {
   const _PasswordField();
+
+  @override
+  State<_PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<_PasswordField> {
+  bool _obscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +147,7 @@ class _PasswordField extends StatelessWidget {
         }
 
         return TextField(
-          obscureText: true,
+          obscureText: _obscure,
           decoration: InputDecoration(
             labelText: 'Contraseña',
             prefixIcon: const Icon(Icons.lock_outline),
@@ -155,6 +162,11 @@ class _PasswordField extends StatelessWidget {
               borderRadius: const BorderRadius.all(Radius.circular(14)),
               borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
             ),
+            suffixIcon: IconButton(
+              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+              onPressed: () => setState(() => _obscure = !_obscure),
+              tooltip: _obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
+            ),
           ),
           onChanged: (value) => context
               .read<RegistrationBloc>()
@@ -165,8 +177,15 @@ class _PasswordField extends StatelessWidget {
   }
 }
 
-class _ConfirmPasswordField extends StatelessWidget {
+class _ConfirmPasswordField extends StatefulWidget {
   const _ConfirmPasswordField();
+
+  @override
+  State<_ConfirmPasswordField> createState() => _ConfirmPasswordFieldState();
+}
+
+class _ConfirmPasswordFieldState extends State<_ConfirmPasswordField> {
+  bool _obscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +202,7 @@ class _ConfirmPasswordField extends StatelessWidget {
         }
 
         return TextField(
-          obscureText: true,
+          obscureText: _obscure,
           decoration: InputDecoration(
             labelText: 'Confirmar Contraseña',
             prefixIcon: const Icon(Icons.verified_user_outlined),
@@ -197,6 +216,11 @@ class _ConfirmPasswordField extends StatelessWidget {
             errorBorder: OutlineInputBorder(
               borderRadius: const BorderRadius.all(Radius.circular(14)),
               borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+              onPressed: () => setState(() => _obscure = !_obscure),
+              tooltip: _obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
             ),
           ),
           onChanged: (value) => context
