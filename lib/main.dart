@@ -1,19 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-void main() {
-  runApp(const MainApp());
+import 'src/app/bloc/app_bloc_observer.dart';
+import 'src/app/di/injection_container.dart';
+import 'src/app/router/app_router.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  Bloc.observer = AppBlocObserver();
+  await configureDependencies();
+
+  final router = sl<AppRouter>().router;
+  runApp(MainApp(router: router));
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  const MainApp({super.key, required this.router});
+
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hola'),
-        ),
+    return MaterialApp.router(
+      title: 'prueba_itau',
+      routerConfig: router,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        useMaterial3: true,
       ),
     );
   }
