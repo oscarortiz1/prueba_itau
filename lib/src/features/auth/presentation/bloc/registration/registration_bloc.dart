@@ -77,7 +77,11 @@ class RegistrationBloc extends Bloc<RegistrationEvent, RegistrationState> {
 
     try {
       await _registerUser(
-        RegisterParams(email: state.email, password: state.password),
+        RegisterParams(
+          email: state.email,
+          password: state.password,
+          confirmPassword: state.confirmPassword,
+        ),
       );
       emit(state.copyWith(status: RegistrationStatus.success, errorMessage: null));
     } on AppException catch (e) {

@@ -12,13 +12,19 @@ class RegisterUser extends UseCase<AuthUser, RegisterParams> {
     return _repository.register(
       email: params.email,
       password: params.password,
+      confirmPassword: params.confirmPassword,
     );
   }
 }
 
 class RegisterParams {
-  const RegisterParams({required this.email, required this.password});
+  const RegisterParams({
+    required this.email,
+    required this.password,
+    required this.confirmPassword,
+  });
 
   final String email;
   final String password;
+  final String confirmPassword;
 }

@@ -1,19 +1,19 @@
 import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../datasources/auth_local_data_source.dart';
+import '../datasources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl({required AuthLocalDataSource localDataSource})
-      : _localDataSource = localDataSource;
+  AuthRepositoryImpl({required AuthRemoteDataSource remoteDataSource})
+      : _remoteDataSource = remoteDataSource;
 
-  final AuthLocalDataSource _localDataSource;
+  final AuthRemoteDataSource _remoteDataSource;
 
   @override
   Future<AuthUser> login({
     required String email,
     required String password,
   }) async {
-    final user = await _localDataSource.login(
+    final user = await _remoteDataSource.login(
       email: email,
       password: password,
     );
@@ -25,10 +25,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AuthUser> register({
     required String email,
     required String password,
+    required String confirmPassword,
   }) async {
-    final user = await _localDataSource.register(
+    final user = await _remoteDataSource.register(
       email: email,
       password: password,
+      confirmPassword: confirmPassword,
     );
 
     return user.toEntity();
