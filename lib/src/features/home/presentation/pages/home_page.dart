@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -54,7 +55,7 @@ class HomePage extends StatelessWidget {
                     const SizedBox(height: 32),
                     const TransactionsSection(),
                     const SizedBox(height: 32),
-                    _ShortcutGrid(isWide: isWide),
+                    const _ShortcutCarousel(),
                   ],
                 ),
               ),
@@ -173,53 +174,111 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-class _ShortcutGrid extends StatelessWidget {
-  const _ShortcutGrid({required this.isWide});
+class _ShortcutCarousel extends StatefulWidget {
+  const _ShortcutCarousel();
 
-  final bool isWide;
+  @override
+  State<_ShortcutCarousel> createState() => _ShortcutCarouselState();
+}
+
+class _ShortcutCarouselState extends State<_ShortcutCarousel> {
+  PageController? _controller;
+  double? _viewportFraction;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _ensureController(double fraction, int itemCount) {
+    if (_controller == null) {
+      _controller = PageController(viewportFraction: fraction);
+      _viewportFraction = fraction;
+      return;
+    }
+
+    if (_viewportFraction != null && (_viewportFraction! - fraction).abs() < 0.001) {
+      return;
+    }
+
+    final oldController = _controller!;
+    final initialPage = oldController.hasClients
+        ? (oldController.page ?? oldController.initialPage.toDouble()).round()
+        : oldController.initialPage;
+  final safeInitialPage = itemCount <= 0
+    ? 0
+    : initialPage.clamp(0, itemCount - 1).toInt();
+
+    _viewportFraction = fraction;
+    _controller = PageController(
+      viewportFraction: fraction,
+      initialPage: safeInitialPage,
+    );
+    oldController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final shortcuts = [
-      _ShortcutTile(
+    final shortcuts = <Widget>[
+      const _ShortcutTile(
         icon: Icons.savings_outlined,
         title: 'Ahorros',
         subtitle: 'Revisa saldos y movimientos al instante.',
       ),
-      _ShortcutTile(
+      const _ShortcutTile(
         icon: Icons.credit_card_outlined,
         title: 'Tarjetas',
         subtitle: 'Pagos, cupo disponible y beneficios exclusivos.',
       ),
-      _ShortcutTile(
+      const _ShortcutTile(
         icon: Icons.payments_outlined,
         title: 'Pagos',
         subtitle: 'Programa pagos recurrentes y transacciones rapidas.',
       ),
-      _ShortcutTile(
+      const _ShortcutTile(
         icon: Icons.trending_up_outlined,
         title: 'Inversiones',
         subtitle: 'Sigue el rendimiento de tus portafolios.',
       ),
     ];
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMedium = screenWidth >= 720;
-    final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 1);
-    // Ajuste de aspect ratio para evitar overflow vertical en tarjetas
-    final aspectRatio = isWide ? 1.15 : (isMedium ? 1.45 : 2.1);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final fraction = width >= 1100
+            ? 0.32
+            : width >= 720
+                ? 0.48
+                : 0.88;
+  _ensureController(fraction, shortcuts.length);
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 24,
-        mainAxisSpacing: 24,
-        childAspectRatio: aspectRatio,
-      ),
-      itemCount: shortcuts.length,
-      itemBuilder: (context, index) => shortcuts[index],
+        final cardHeight = width >= 720 ? 220.0 : 210.0;
+        final horizontalPadding = width >= 720 ? 16.0 : 12.0;
+
+        return SizedBox(
+          height: cardHeight,
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: const {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.trackpad,
+              },
+            ),
+            child: PageView.builder(
+              controller: _controller!,
+              physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
+              padEnds: width < 720,
+              itemCount: shortcuts.length,
+              itemBuilder: (context, index) => Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: shortcuts[index],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
