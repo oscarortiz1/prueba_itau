@@ -53,7 +53,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       final user = await _loginUser(
         LoginParams(email: state.email, password: state.password),
       );
-      _sessionManager.updateUser(user);
+      await _sessionManager.updateUser(user);
       emit(
         state.copyWith(
           status: LoginStatus.success,

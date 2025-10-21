@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/di/injection_container.dart';
+import '../../../../core/session/session_manager.dart';
+import '../../../transactions/presentation/widgets/transactions_section.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -23,7 +26,12 @@ class HomePage extends StatelessWidget {
             child: FilledButton.tonalIcon(
               icon: const Icon(Icons.logout),
               label: const Text('Cerrar sesion'),
-              onPressed: () => context.goNamed(AppRouteName.login),
+              onPressed: () async {
+                await sl<SessionManager>().clear();
+                if (context.mounted) {
+                  context.goNamed(AppRouteName.login);
+                }
+              },
             ),
           ),
         ],
@@ -44,6 +52,8 @@ class HomePage extends StatelessWidget {
                     _HeroSection(isWide: isWide),
                     const SizedBox(height: 32),
                     _ShortcutGrid(isWide: isWide),
+                    const SizedBox(height: 32),
+                    const TransactionsSection(),
                     const SizedBox(height: 32),
                     _InsightsSection(isWide: isWide),
                   ],
