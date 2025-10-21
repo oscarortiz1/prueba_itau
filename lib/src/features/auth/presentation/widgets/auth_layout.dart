@@ -86,18 +86,22 @@ class AuthLayout extends StatelessWidget {
                 ),
               );
 
+              final infoPanel = ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _InfoPanel(theme: theme),
+                ),
+              );
+
               final content = isWide
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: _InfoPanel(theme: theme),
-                          ),
-                        ),
-                        const SizedBox(width: 24),
+                        infoPanel,
+                        const SizedBox(width: 28),
                         formCard,
                       ],
                     )

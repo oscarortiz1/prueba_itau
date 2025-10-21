@@ -25,17 +25,23 @@ class AppRouter {
       GoRoute(
         name: AppRouteName.login,
         path: AppRoutePath.login,
-        builder: (context, state) => BlocProvider(
-          create: (_) => _sl<LoginBloc>(),
-          child: const LoginPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: BlocProvider(
+            create: (_) => _sl<LoginBloc>(),
+            child: const LoginPage(),
+          ),
         ),
       ),
       GoRoute(
         name: AppRouteName.register,
         path: AppRoutePath.register,
-        builder: (context, state) => BlocProvider(
-          create: (_) => _sl<RegistrationBloc>(),
-          child: const RegistrationPage(),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: BlocProvider(
+            create: (_) => _sl<RegistrationBloc>(),
+            child: const RegistrationPage(),
+          ),
         ),
       ),
       GoRoute(
