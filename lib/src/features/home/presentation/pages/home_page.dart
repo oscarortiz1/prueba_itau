@@ -51,11 +51,10 @@ class HomePage extends StatelessWidget {
                   children: [
                     _HeroSection(isWide: isWide),
                     const SizedBox(height: 32),
-                    _ShortcutGrid(isWide: isWide),
                     const SizedBox(height: 32),
                     const TransactionsSection(),
                     const SizedBox(height: 32),
-                    _InsightsSection(isWide: isWide),
+                    _ShortcutGrid(isWide: isWide),
                   ],
                 ),
               ),
@@ -141,10 +140,7 @@ class _HeroSection extends StatelessWidget {
             SizedBox(height: 12),
             Text(
               'Controla gastos, ingresos y objetivos con herramientas inteligentes.',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
           ],
         ),
@@ -207,15 +203,11 @@ class _ShortcutGrid extends StatelessWidget {
       ),
     ];
 
-  final screenWidth = MediaQuery.of(context).size.width;
-  final isMedium = screenWidth >= 720;
-  final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 1);
-  // Ajuste de aspect ratio para evitar overflow vertical en tarjetas
-  final aspectRatio = isWide
-    ? 1.15
-    : (isMedium
-      ? 1.45
-      : 2.1);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMedium = screenWidth >= 720;
+    final crossAxisCount = isWide ? 4 : (isMedium ? 2 : 1);
+    // Ajuste de aspect ratio para evitar overflow vertical en tarjetas
+    final aspectRatio = isWide ? 1.15 : (isMedium ? 1.45 : 2.1);
 
     return GridView.builder(
       shrinkWrap: true,
@@ -259,7 +251,9 @@ class _ShortcutTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.12,
+                  ),
                   child: Icon(icon, color: theme.colorScheme.primary, size: 24),
                 ),
                 const Spacer(),
@@ -273,7 +267,9 @@ class _ShortcutTile extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               title,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             Flexible(
@@ -284,139 +280,6 @@ class _ShortcutTile extends StatelessWidget {
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InsightsSection extends StatelessWidget {
-  const _InsightsSection({required this.isWide});
-
-  final bool isWide;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final insightCards = [
-      _InsightCard(
-        title: 'Resumen mensual',
-               value: ' \$ 2.450.000',
-        description: 'Ingresos netos registrados este mes.',
-        icon: Icons.calendar_month_outlined,
-      ),
-      _InsightCard(
-        title: 'Objetivo de ahorro',
-        value: '65 %',
-        description: 'Progreso del objetivo anual de ahorro.',
-        icon: Icons.flag_outlined,
-      ),
-      _InsightCard(
-        title: 'Pagos programados',
-        value: '3',
-        description: 'Pagos automaticos por ejecutar esta semana.',
-        icon: Icons.schedule_outlined,
-      ),
-    ];
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Insights rapidos',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 20),
-            if (isWide)
-              Row(
-                children: List.generate(
-                  insightCards.length,
-                  (index) => Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: index == insightCards.length - 1 ? 0 : 16,
-                      ),
-                      child: insightCards[index],
-                    ),
-                  ),
-                ),
-              )
-            else
-              Column(
-                children: List.generate(
-                  insightCards.length,
-                  (index) => Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == insightCards.length - 1 ? 0 : 16,
-                    ),
-                    child: insightCards[index],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InsightCard extends StatelessWidget {
-  const _InsightCard({
-    required this.title,
-    required this.value,
-    required this.description,
-    required this.icon,
-  });
-
-  final String title;
-  final String value;
-  final String description;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-              child: Icon(icon, color: theme.colorScheme.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              description,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

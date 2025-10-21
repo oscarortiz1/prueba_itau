@@ -32,21 +32,45 @@ class TransactionsSection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'Ingresos y gastos',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const Spacer(),
-                    FilledButton.icon(
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const compactWidth = 520.0;
+                    final isCompact = constraints.maxWidth <= compactWidth;
+
+                    final button = FilledButton.icon(
                       onPressed: state.isProcessing
                           ? null
                           : () => _openCreateSheet(context),
                       icon: const Icon(Icons.add),
                       label: const Text('Registrar movimiento'),
-                    ),
-                  ],
+                    );
+
+                    final title = Text(
+                      'Ingresos y gastos',
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                    );
+
+                    if (isCompact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          title,
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: button,
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(child: title),
+                        button,
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
                 if (state.isLoading)
@@ -239,7 +263,12 @@ class _TotalsRow extends StatelessWidget {
             children: [
               Icon(icon, color: color),
               const SizedBox(height: 12),
-              Text(title, style: theme.textTheme.bodyMedium),
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               const SizedBox(height: 6),
               Text(
                 formatted,
@@ -247,6 +276,8 @@ class _TotalsRow extends StatelessWidget {
                   color: color,
                   fontWeight: FontWeight.bold,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -323,41 +354,127 @@ class _TransactionsList extends StatelessWidget {
         final isIncome = transaction.type == TransactionType.income;
         final amountColor = isIncome ? Colors.green.shade700 : Colors.red.shade700;
 
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            leading: CircleAvatar(
-              backgroundColor: (isIncome ? Colors.green : Colors.red).withValues(alpha: 0.1),
-              child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward, color: amountColor),
-            ),
-            title: Text(transaction.title),
-            subtitle: Text(_buildSubtitle(transaction)),
-            trailing: Wrap(
-              spacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  (isIncome ? '+' : '-') + _formatCurrency(transaction.amount),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: amountColor,
-                    fontWeight: FontWeight.bold,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 400;
+
+            Widget buildActions({required bool dense}) {
+              final amountText = Text(
+                (isIncome ? '+' : '-') + _formatCurrency(transaction.amount),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: amountColor,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+              );
+
+              final buttons = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Editar',
+                    onPressed: isBusy ? null : () => onEdit(transaction),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Eliminar',
+                    onPressed: isBusy ? null : () => onDelete(transaction),
+                  ),
+                ],
+              );
+
+              if (dense) {
+                return Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    amountText,
+                    buttons,
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  amountText,
+                  const SizedBox(height: 8),
+                  buttons,
+                ],
+              );
+            }
+
+            return Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: (isIncome ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                          child: Icon(
+                            isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                            color: amountColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                transaction.title,
+                                style: theme.textTheme.titleMedium,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _buildSubtitle(transaction),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!isCompact) ...[
+                          const SizedBox(width: 12),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160),
+                            child: buildActions(dense: false),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (isCompact) ...[
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 220),
+                          child: buildActions(dense: true),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Editar',
-                  onPressed: isBusy ? null : () => onEdit(transaction),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Eliminar',
-                  onPressed: isBusy ? null : () => onDelete(transaction),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
