@@ -2,14 +2,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../../../../core/errors/app_exception.dart';
+import '../../../../../core/session/session_manager.dart';
+import '../../../domain/entities/auth_user.dart';
 import '../../../domain/usecases/login_user.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
-  LoginBloc({required LoginUser loginUser})
+  LoginBloc({required LoginUser loginUser, required SessionManager sessionManager})
       : _loginUser = loginUser,
+        _sessionManager = sessionManager,
         super(const LoginState()) {
     on<LoginEmailChanged>(_onEmailChanged);
     on<LoginPasswordChanged>(_onPasswordChanged);
@@ -17,6 +20,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   final LoginUser _loginUser;
+  final SessionManager _sessionManager;
 
   void _onEmailChanged(LoginEmailChanged event, Emitter<LoginState> emit) {
     emit(state.copyWith(email: event.email, status: LoginStatus.initial));
@@ -46,10 +50,17 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(state.copyWith(status: LoginStatus.loading, errorMessage: null));
 
     try {
-      await _loginUser(
+      final user = await _loginUser(
         LoginParams(email: state.email, password: state.password),
       );
-      emit(state.copyWith(status: LoginStatus.success, errorMessage: null));
+      _sessionManager.updateUser(user);
+      emit(
+        state.copyWith(
+          status: LoginStatus.success,
+          errorMessage: null,
+          user: user,
+        ),
+      );
     } on AppException catch (e) {
       emit(state.copyWith(status: LoginStatus.failure, errorMessage: e.message));
     } catch (_) {
