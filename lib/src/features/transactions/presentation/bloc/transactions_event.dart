@@ -11,6 +11,24 @@ class TransactionsLoaded extends TransactionsEvent {
   const TransactionsLoaded();
 }
 
+class TransactionsConnectionChanged extends TransactionsEvent {
+  const TransactionsConnectionChanged(this.isConnected);
+
+  final bool isConnected;
+
+  @override
+  List<Object?> get props => [isConnected];
+}
+
+class TransactionsSyncRequested extends TransactionsEvent {
+  const TransactionsSyncRequested({this.fromUser = false});
+
+  final bool fromUser;
+
+  @override
+  List<Object?> get props => [fromUser];
+}
+
 class TransactionCreateRequested extends TransactionsEvent {
   const TransactionCreateRequested(this.payload);
 

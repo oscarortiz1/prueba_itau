@@ -64,10 +64,10 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
       }
 
       throw AppException(_extractMessage(response.body));
-    } on SocketException {
-      throw AppException('Sin conexion con el servidor. Verifica tu red.');
-    } on TimeoutException {
-      throw AppException('La solicitud tardo demasiado. Intenta nuevamente.');
+      } on SocketException {
+        throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
+      } on TimeoutException {
+        throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     } on FormatException {
       throw AppException('Formato de respuesta invalido.');
     }
@@ -151,10 +151,10 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
       }
 
       throw AppException(_extractMessage(response.body));
-    } on SocketException {
-      throw AppException('Sin conexion con el servidor. Verifica tu red.');
-    } on TimeoutException {
-      throw AppException('La solicitud tardo demasiado. Intenta nuevamente.');
+      } on SocketException {
+        throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
+      } on TimeoutException {
+        throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     }
   }
 
@@ -167,10 +167,10 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
       }
 
       throw AppException(_extractMessage(response.body));
-    } on SocketException {
-      throw AppException('Sin conexion con el servidor. Verifica tu red.');
-    } on TimeoutException {
-      throw AppException('La solicitud tardo demasiado. Intenta nuevamente.');
+      } on SocketException {
+        throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
+      } on TimeoutException {
+        throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     }
   }
 
@@ -195,7 +195,6 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
         }
       }
     } catch (_) {
-      // Ignored: fall back to default message.
     }
     return 'Ocurrio un error. Intenta nuevamente.';
   }

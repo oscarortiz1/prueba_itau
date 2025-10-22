@@ -6,3 +6,7 @@ class AppException implements Exception {
   @override
   String toString() => 'AppException: $message';
 }
+
+class NetworkException extends AppException {
+  NetworkException(super.message);
+}

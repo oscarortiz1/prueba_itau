@@ -9,4 +9,8 @@ abstract class TransactionsRepository {
   Future<Transaction> updateTransaction(String id, TransactionUpdatePayload payload);
 
   Future<void> deleteTransaction(String id);
+
+  Future<List<Transaction>> syncPendingTransactions();
+
+  Future<int> pendingOperationsCount();
 }
