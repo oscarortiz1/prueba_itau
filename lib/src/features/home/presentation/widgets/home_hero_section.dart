@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:prueba_itau/src/features/statistics/presentation/pages/statistics_page.dart';
+import 'package:prueba_itau/src/features/transactions/presentation/bloc/transactions_bloc.dart';
 
 class HomeHeroSection extends StatelessWidget {
   const HomeHeroSection({required this.isWide, super.key});
@@ -32,9 +35,18 @@ class HomeHeroSection extends StatelessWidget {
           runSpacing: 12,
           children: [
             FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.account_balance_wallet_outlined),
-              label: const Text('Ver productos'),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (routeContext) => BlocProvider.value(
+                      value: context.read<TransactionsBloc>(),
+                      child: const StatisticsPage(),
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.show_chart),
+              label: const Text('Ver estadísticas'),
             ),
             OutlinedButton.icon(
               onPressed: () {},
