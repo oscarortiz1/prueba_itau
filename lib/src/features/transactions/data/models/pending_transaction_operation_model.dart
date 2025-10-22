@@ -105,7 +105,7 @@ class PendingTransactionOperationModel {
       title: payload['title'] as String,
       amount: (payload['amount'] as num).toDouble(),
       category: payload['category'] as String?,
-      occurredAt: DateTime.parse(payload['occurredAt'] as String),
+      occurredAt: DateTime.parse(payload['occurredAt'] as String).toLocal(),
     );
   }
 
@@ -121,9 +121,9 @@ class PendingTransactionOperationModel {
       title: payload['title'] as String?,
       amount: payload['amount'] == null ? null : (payload['amount'] as num).toDouble(),
       category: payload['category'] as String?,
-      occurredAt: payload['occurredAt'] == null
-          ? null
-          : DateTime.parse(payload['occurredAt'] as String),
+    occurredAt: payload['occurredAt'] == null
+      ? null
+      : DateTime.parse(payload['occurredAt'] as String).toLocal(),
     );
   }
 
@@ -142,7 +142,7 @@ class PendingTransactionOperationModel {
       base['category'] = payload.category;
     }
     if (payload.occurredAt != null) {
-      base['occurredAt'] = payload.occurredAt!.toIso8601String();
+      base['occurredAt'] = payload.occurredAt!.toUtc().toIso8601String();
     }
 
     return PendingTransactionOperationModel(
@@ -169,7 +169,7 @@ class PendingTransactionOperationModel {
       base['category'] = payload.category;
     }
     if (payload.occurredAt != null) {
-      base['occurredAt'] = payload.occurredAt!.toIso8601String();
+      base['occurredAt'] = payload.occurredAt!.toUtc().toIso8601String();
     }
 
     return PendingTransactionOperationModel(
@@ -204,7 +204,7 @@ Map<String, dynamic> _serializeCreatePayload(TransactionCreatePayload payload) {
     'title': payload.title,
     'amount': payload.amount,
     'category': payload.category,
-    'occurredAt': payload.occurredAt.toIso8601String(),
+    'occurredAt': payload.occurredAt.toUtc().toIso8601String(),
   };
 }
 
@@ -223,7 +223,7 @@ Map<String, dynamic> _serializeUpdatePayload(TransactionUpdatePayload payload) {
     map['category'] = payload.category;
   }
   if (payload.occurredAt != null) {
-    map['occurredAt'] = payload.occurredAt!.toIso8601String();
+    map['occurredAt'] = payload.occurredAt!.toUtc().toIso8601String();
   }
   return map;
 }

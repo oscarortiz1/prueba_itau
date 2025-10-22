@@ -27,9 +27,9 @@ class TransactionModel extends Transaction {
       title: json['title'] as String,
       amount: (json['amount'] as num).toDouble(),
       category: json['category'] as String?,
-      occurredAt: DateTime.parse(json['occurredAt'] as String),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+  occurredAt: DateTime.parse(json['occurredAt'] as String).toLocal(),
+  createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
+  updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
     );
   }
 

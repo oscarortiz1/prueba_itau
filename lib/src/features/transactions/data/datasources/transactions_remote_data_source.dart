@@ -84,7 +84,7 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
       'title': payload.title,
       'amount': payload.amount,
       'category': payload.category,
-      'occurredAt': payload.occurredAt.toIso8601String(),
+      'occurredAt': payload.occurredAt.toUtc().toIso8601String(),
     });
 
     final response = await _postOrPatch(
@@ -119,7 +119,7 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
       body['category'] = payload.category;
     }
     if (payload.occurredAt != null) {
-      body['occurredAt'] = payload.occurredAt!.toIso8601String();
+      body['occurredAt'] = payload.occurredAt!.toUtc().toIso8601String();
     }
 
     final response = await _postOrPatch(
