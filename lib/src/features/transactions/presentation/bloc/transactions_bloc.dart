@@ -259,7 +259,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
 
   List<Transaction> _sorted(List<Transaction> transactions) {
     final list = List<Transaction>.from(transactions);
-    list.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
   }
 }

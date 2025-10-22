@@ -328,13 +328,13 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
 
   List<Transaction> _sortTransactions(List<Transaction> source) {
     final copy = List<Transaction>.from(source);
-    copy.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    copy.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return copy;
   }
 
   List<TransactionModel> _sortModels(List<TransactionModel> source) {
     final copy = List<TransactionModel>.from(source);
-    copy.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    copy.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return copy;
   }
 }
