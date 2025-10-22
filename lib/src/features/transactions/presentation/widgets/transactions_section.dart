@@ -6,14 +6,130 @@ import '../../domain/entities/transaction.dart';
 import '../../domain/entities/transaction_payload.dart';
 import '../bloc/transactions_bloc.dart';
 
+
+class TransactionsUiState {
+  const TransactionsUiState({
+    this.listPage = 0,
+    this.totalsPage = 0,
+    this.viewportFraction = 0.9,
+    this.filtersTick = 0,
+    this.formType,
+    this.formOccurredAt,
+  });
+
+  final int listPage;
+  final int totalsPage;
+  final double viewportFraction;
+  final int filtersTick; 
+  final TransactionType? formType;
+  final DateTime? formOccurredAt;
+
+  TransactionsUiState copyWith({
+    int? listPage,
+    int? totalsPage,
+    double? viewportFraction,
+    int? filtersTick,
+    TransactionType? formType,
+    DateTime? formOccurredAt,
+  }) {
+    return TransactionsUiState(
+      listPage: listPage ?? this.listPage,
+      totalsPage: totalsPage ?? this.totalsPage,
+      viewportFraction: viewportFraction ?? this.viewportFraction,
+      filtersTick: filtersTick ?? this.filtersTick,
+      formType: formType ?? this.formType,
+      formOccurredAt: formOccurredAt ?? this.formOccurredAt,
+    );
+  }
+}
+
+class TransactionsUiCubit extends Cubit<TransactionsUiState> {
+  TransactionsUiCubit() : super(const TransactionsUiState()) {
+
+    _pageController = PageController(viewportFraction: state.viewportFraction);
+    _pageController.addListener(_onPageControllerScroll);
+  }
+
+  late PageController _pageController;
+
+  PageController get pageController => _pageController;
+
+  void _onPageControllerScroll() {
+
+    final page = _pageController.hasClients
+        ? (_pageController.page ?? _pageController.initialPage).round()
+        : 0;
+    if (page != state.totalsPage) {
+      emit(state.copyWith(totalsPage: page));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _pageController.removeListener(_onPageControllerScroll);
+    _pageController.dispose();
+    return super.close();
+  }
+
+  void notifyFiltersChanged() => emit(state.copyWith(filtersTick: state.filtersTick + 1));
+
+  void setListPage(int page) => emit(state.copyWith(listPage: page));
+
+  void nextListPage(int maxPage) {
+    final candidate = state.listPage + 1;
+    final next = candidate > maxPage ? maxPage : candidate;
+    emit(state.copyWith(listPage: next));
+  }
+
+  void prevListPage() {
+    final prev = state.listPage > 0 ? state.listPage - 1 : 0;
+    emit(state.copyWith(listPage: prev));
+  }
+
+  void setTotalsPage(int page) {
+    emit(state.copyWith(totalsPage: page));
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(page, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    }
+  }
+
+  void goToPage(int page) {
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(page, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    } else {
+      setTotalsPage(page);
+    }
+  }
+
+  void setViewportFraction(double fraction) {
+    if ((fraction - state.viewportFraction).abs() < 0.01) return;
+    final old = _pageController;
+    final newController = PageController(initialPage: state.totalsPage, viewportFraction: fraction);
+    old.removeListener(_onPageControllerScroll);
+    old.dispose();
+    _pageController = newController;
+    _pageController.addListener(_onPageControllerScroll);
+    emit(state.copyWith(viewportFraction: fraction));
+  }
+
+  void initForm({TransactionType? type, DateTime? occurredAt}) => emit(state.copyWith(formType: type, formOccurredAt: occurredAt));
+
+  void setFormType(TransactionType type) => emit(state.copyWith(formType: type));
+
+  void setFormOccurredAt(DateTime date) => emit(state.copyWith(formOccurredAt: date));
+
+  void resetForm() => emit(state.copyWith(formType: null, formOccurredAt: null));
+}
+
 class TransactionsSection extends StatelessWidget {
   const TransactionsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final _ = context.watch<TransactionsUiCubit>().state.filtersTick;
     final theme = Theme.of(context);
 
-    return BlocConsumer<TransactionsBloc, TransactionsState>(
+  return BlocConsumer<TransactionsBloc, TransactionsState>(
       listenWhen: (previous, current) =>
           previous.errorMessage != current.errorMessage,
       listener: (context, state) {
@@ -143,6 +259,8 @@ class TransactionsSection extends StatelessWidget {
   }
 
   void _openCreateSheet(BuildContext context) {
+
+    context.read<TransactionsUiCubit>().initForm(type: TransactionType.expense, occurredAt: DateTime.now());
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -150,19 +268,24 @@ class TransactionsSection extends StatelessWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
-        child: _TransactionFormSheet(
-          onSubmit: (payload) {
-            Navigator.of(sheetContext).pop();
-            context.read<TransactionsBloc>().add(
-              TransactionCreateRequested(payload),
-            );
-          },
+        child: BlocProvider.value(
+          value: context.read<TransactionsUiCubit>(),
+          child: _TransactionFormSheet(
+            onSubmit: (payload) {
+              Navigator.of(sheetContext).pop();
+              context.read<TransactionsBloc>().add(
+                TransactionCreateRequested(payload),
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
   void _openEditSheet(BuildContext context, Transaction transaction) {
+
+    context.read<TransactionsUiCubit>().initForm(type: transaction.type, occurredAt: transaction.occurredAt);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -170,14 +293,17 @@ class TransactionsSection extends StatelessWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
-        child: _TransactionFormSheet.edit(
-          transaction: transaction,
-          onSubmit: (payload) {
-            Navigator.of(sheetContext).pop();
-            context.read<TransactionsBloc>().add(
-              TransactionUpdateRequested(transaction.id, payload),
-            );
-          },
+        child: BlocProvider.value(
+          value: context.read<TransactionsUiCubit>(),
+          child: _TransactionFormSheet.edit(
+            transaction: transaction,
+            onSubmit: (payload) {
+              Navigator.of(sheetContext).pop();
+              context.read<TransactionsBloc>().add(
+                TransactionUpdateRequested(transaction.id, payload),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -376,7 +502,9 @@ class _TransactionsContentState extends State<_TransactionsContent> {
   }
 
   void _onFiltersChanged() {
-    setState(() {});
+
+    final cubit = context.read<TransactionsUiCubit>();
+    cubit.notifyFiltersChanged();
   }
 
   bool get _hasFilters {
@@ -401,9 +529,9 @@ class _TransactionsContentState extends State<_TransactionsContent> {
             maxAmount: maxAmount,
           );
 
-    final totals = _calculateTotals(filteredTransactions);
-    final totalCount = widget.transactions.length;
-    final filteredCount = filteredTransactions.length;
+  final totalsAll = _calculateTotals(widget.transactions);
+  final totalCount = widget.transactions.length;
+  final filteredCount = filteredTransactions.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -415,20 +543,19 @@ class _TransactionsContentState extends State<_TransactionsContent> {
           rangeError: rangeError,
         ),
         const SizedBox(height: 24),
+        _TotalsCarousel(totals: totalsAll),
+        const SizedBox(height: 24),
         if (filteredTransactions.isEmpty)
           _NoResultsPlaceholder(
             onClear: _hasFilters ? _clearFilters : null,
           )
-        else ...[
-          _TotalsCarousel(totals: totals),
-          const SizedBox(height: 24),
+        else
           _TransactionsList(
             transactions: filteredTransactions,
             onEdit: widget.onEdit,
             onDelete: widget.onDelete,
             isBusy: widget.isBusy,
           ),
-        ],
       ],
     );
   }
@@ -818,50 +945,10 @@ class _TotalsCarousel extends StatefulWidget {
 }
 
 class _TotalsCarouselState extends State<_TotalsCarousel> {
-  double _viewportFraction = 0.9;
-  late PageController _pageController;
-  int _currentPage = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: _viewportFraction);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _ensureViewport(double desiredFraction) {
-    if ((desiredFraction - _viewportFraction).abs() < 0.01) {
-      return;
-    }
-
-    final oldController = _pageController;
-    final newController = PageController(
-      initialPage: _currentPage,
-      viewportFraction: desiredFraction,
-    );
-
-    setState(() {
-      _viewportFraction = desiredFraction;
-      _pageController = newController;
-    });
-
-    oldController.dispose();
-  }
-
-  void _goToPage(int index, int itemCount) {
-    if (index < 0 || index >= itemCount) {
-      return;
-    }
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   @override
@@ -905,12 +992,11 @@ class _TotalsCarouselState extends State<_TotalsCarousel> {
   final showInlineNav = allowNav && !showOverlayNav && kIsWeb;
   final maxPage = slides.length - 1;
 
-        if ((desiredFraction - _viewportFraction).abs() > 0.01) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _ensureViewport(desiredFraction);
-          });
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final uiCubit = context.read<TransactionsUiCubit>();
+          uiCubit.setViewportFraction(desiredFraction);
+        });
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -921,14 +1007,14 @@ class _TotalsCarouselState extends State<_TotalsCarousel> {
                 alignment: Alignment.center,
                 children: [
                   PageView.builder(
-                    controller: _pageController,
+                    controller: context.read<TransactionsUiCubit>().pageController,
                     itemCount: slides.length,
                     onPageChanged: (index) {
-                      setState(() => _currentPage = index);
+                      context.read<TransactionsUiCubit>().setTotalsPage(index);
                     },
                     itemBuilder: (context, index) {
                       final slide = slides[index];
-                      final isActive = index == _currentPage;
+                      final isActive = index == context.watch<TransactionsUiCubit>().state.totalsPage;
                       return AnimatedPadding(
                         duration: const Duration(milliseconds: 280),
                         curve: Curves.easeOut,
@@ -943,20 +1029,20 @@ class _TotalsCarouselState extends State<_TotalsCarousel> {
                   if (showOverlayNav) ...[
                     Positioned(
                       left: 4,
-                      child: _CarouselArrow(
-                        icon: Icons.chevron_left,
-                        enabled: _currentPage > 0,
-                        onTap: () => _goToPage(_currentPage - 1, slides.length),
-                      ),
+                        child: _CarouselArrow(
+                          icon: Icons.chevron_left,
+                          enabled: context.watch<TransactionsUiCubit>().state.totalsPage > 0,
+                          onTap: () => context.read<TransactionsUiCubit>().goToPage(context.read<TransactionsUiCubit>().state.totalsPage - 1),
+                        ),
                     ),
-                    Positioned(
-                      right: 4,
-                      child: _CarouselArrow(
-                        icon: Icons.chevron_right,
-                        enabled: _currentPage < maxPage,
-                        onTap: () => _goToPage(_currentPage + 1, slides.length),
+                      Positioned(
+                        right: 4,
+                        child: _CarouselArrow(
+                          icon: Icons.chevron_right,
+                          enabled: context.watch<TransactionsUiCubit>().state.totalsPage < maxPage,
+                          onTap: () => context.read<TransactionsUiCubit>().goToPage(context.read<TransactionsUiCubit>().state.totalsPage + 1),
+                        ),
                       ),
-                    ),
                   ],
                 ],
               ),
@@ -969,14 +1055,14 @@ class _TotalsCarouselState extends State<_TotalsCarousel> {
                   if (showInlineNav) ...[
                     _CarouselArrow(
                       icon: Icons.chevron_left,
-                      enabled: _currentPage > 0,
-                      onTap: () => _goToPage(_currentPage - 1, slides.length),
+                      enabled: context.watch<TransactionsUiCubit>().state.totalsPage > 0,
+                      onTap: () => context.read<TransactionsUiCubit>().goToPage(context.read<TransactionsUiCubit>().state.totalsPage - 1),
                       dense: true,
                     ),
                     const SizedBox(width: 12),
                   ],
                   ...List.generate(slides.length, (index) {
-                    final isActive = index == _currentPage;
+                    final isActive = index == context.watch<TransactionsUiCubit>().state.totalsPage;
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
                       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -994,8 +1080,8 @@ class _TotalsCarouselState extends State<_TotalsCarousel> {
                     const SizedBox(width: 12),
                     _CarouselArrow(
                       icon: Icons.chevron_right,
-                      enabled: _currentPage < maxPage,
-                      onTap: () => _goToPage(_currentPage + 1, slides.length),
+                      enabled: context.watch<TransactionsUiCubit>().state.totalsPage < maxPage,
+                      onTap: () => context.read<TransactionsUiCubit>().goToPage(context.read<TransactionsUiCubit>().state.totalsPage + 1),
                       dense: true,
                     ),
                   ],
@@ -1170,7 +1256,6 @@ class _TransactionsList extends StatefulWidget {
 
 class _TransactionsListState extends State<_TransactionsList> {
   static const int _pageSize = 5;
-  int _currentPage = 0;
 
   int get _totalPages {
     if (widget.transactions.isEmpty) {
@@ -1182,18 +1267,21 @@ class _TransactionsListState extends State<_TransactionsList> {
   @override
   void didUpdateWidget(covariant _TransactionsList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.transactions != oldWidget.transactions) {
-      _currentPage = 0;
+    final cubit = context.read<TransactionsUiCubit>();
+    if (widget.transactions.length != oldWidget.transactions.length) {
+      cubit.setListPage(0);
     }
-    if (_currentPage >= _totalPages) {
-      _currentPage = _totalPages - 1;
+    final current = cubit.state.listPage;
+    if (current >= _totalPages) {
+      cubit.setListPage(_totalPages - 1);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final start = _currentPage * _pageSize;
+  final currentPage = context.watch<TransactionsUiCubit>().state.listPage;
+  final start = currentPage * _pageSize;
     final end = start + _pageSize;
     final visibleTransactions = widget.transactions.sublist(
       start,
@@ -1353,23 +1441,23 @@ class _TransactionsListState extends State<_TransactionsList> {
           Row(
             children: [
               Text(
-                'Página ${_currentPage + 1} de $_totalPages',
+                'Página ${currentPage + 1} de $_totalPages',
                 style: theme.textTheme.bodyMedium,
               ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.chevron_left),
                 tooltip: 'Página anterior',
-                onPressed: _currentPage == 0
+                onPressed: currentPage == 0
                     ? null
-                    : () => setState(() => _currentPage -= 1),
+                    : () => context.read<TransactionsUiCubit>().prevListPage(),
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right),
                 tooltip: 'Página siguiente',
-                onPressed: _currentPage >= _totalPages - 1
+                onPressed: currentPage >= _totalPages - 1
                     ? null
-                    : () => setState(() => _currentPage += 1),
+                    : () => context.read<TransactionsUiCubit>().nextListPage(_totalPages - 1),
               ),
             ],
           ),
@@ -1391,7 +1479,6 @@ class _TransactionsListState extends State<_TransactionsList> {
 }
 
 class _TransactionFormSheet extends StatefulWidget {
-  // ignore: use_super_parameters
   const _TransactionFormSheet({
     Key? key,
     this.transaction,
@@ -1417,10 +1504,8 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
   late final TextEditingController _categoryController;
-  late TransactionType _type;
-  late DateTime _occurredAt;
 
-  static const double _maxAmount = 999999999999.99; // ~1 billon en millones
+  static const double _maxAmount = 999999999999.99;
 
   bool get _isEditing => widget.transaction != null;
 
@@ -1428,8 +1513,6 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
   void initState() {
     super.initState();
     final transaction = widget.transaction;
-    _type = transaction?.type ?? TransactionType.expense;
-    _occurredAt = transaction?.occurredAt ?? DateTime.now();
     _titleController = TextEditingController(text: transaction?.title ?? '');
     _amountController = TextEditingController(
       text: transaction != null ? transaction.amount.toStringAsFixed(2) : '',
@@ -1474,7 +1557,7 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<TransactionType>(
-                        initialValue: _type,
+                          initialValue: context.watch<TransactionsUiCubit>().state.formType ?? TransactionType.expense,
                         decoration: const InputDecoration(labelText: 'Tipo'),
                         items: const [
                           DropdownMenuItem(
@@ -1486,11 +1569,11 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                             child: Text('Gasto'),
                           ),
                         ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _type = value);
-                          }
-                        },
+                          onChanged: (value) {
+                            if (value != null) {
+                              context.read<TransactionsUiCubit>().setFormType(value);
+                            }
+                          },
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -1525,26 +1608,21 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
                     onPressed: () async {
+                      final cubit = context.read<TransactionsUiCubit>();
+                      final initial = cubit.state.formOccurredAt ?? DateTime.now();
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: _occurredAt,
+                        initialDate: initial,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2100),
                       );
                       if (picked != null) {
-                        setState(
-                          () => _occurredAt = DateTime(
-                            picked.year,
-                            picked.month,
-                            picked.day,
-                            _occurredAt.hour,
-                            _occurredAt.minute,
-                          ),
-                        );
+                        final prev = cubit.state.formOccurredAt ?? DateTime.now();
+                        cubit.setFormOccurredAt(DateTime(picked.year, picked.month, picked.day, prev.hour, prev.minute));
                       }
                     },
                     icon: const Icon(Icons.calendar_today_outlined),
-                    label: Text('Fecha: ${_formatDate(_occurredAt)}'),
+                    label: Text('Fecha: ${_formatDate(context.watch<TransactionsUiCubit>().state.formOccurredAt ?? DateTime.now())}'),
                   ),
                 ),
               ],
@@ -1557,14 +1635,8 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                 return;
               }
 
-              if (_occurredAt.isAfter(DateTime.now())) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('La fecha no puede ser en el futuro.'),
-                  ),
-                );
-                return;
-              }
+              final cubit = context.read<TransactionsUiCubit>();
+              final occurredAt = cubit.state.formOccurredAt ?? DateTime.now();
 
               final amount = _parseAmount(_amountController.text);
               final category = _categoryController.text.trim().isEmpty
@@ -1573,16 +1645,17 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
 
               if (_isEditing) {
                 final transaction = widget.transaction!;
+                final selectedType = cubit.state.formType ?? transaction.type;
                 final payload = TransactionUpdatePayload(
-                  type: _type == transaction.type ? null : _type,
+                  type: selectedType == transaction.type ? null : selectedType,
                   title: _titleController.text.trim() == transaction.title
                       ? null
                       : _titleController.text.trim(),
                   amount: amount == transaction.amount ? null : amount,
                   category: category == transaction.category ? null : category,
-                  occurredAt: _sameDate(_occurredAt, transaction.occurredAt)
+                  occurredAt: _sameDate(occurredAt, transaction.occurredAt)
                       ? null
-                      : _occurredAt,
+                      : occurredAt,
                 );
 
                 if (!payload.hasChanges) {
@@ -1599,11 +1672,11 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                 widget.onSubmit(payload);
               } else {
                 final payload = TransactionCreatePayload(
-                  type: _type,
+                  type: cubit.state.formType ?? TransactionType.expense,
                   title: _titleController.text.trim(),
                   amount: amount,
                   category: category,
-                  occurredAt: _occurredAt,
+                  occurredAt: occurredAt,
                 );
                 widget.onSubmit(payload);
               }

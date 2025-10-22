@@ -6,6 +6,12 @@ import '../../../../app/router/routes.dart';
 import '../widgets/auth_layout.dart';
 import '../bloc/registration/registration_bloc.dart';
 
+
+class RegistrationUiCubit extends Cubit<bool> {
+  RegistrationUiCubit() : super(true);
+  void toggle() => emit(!state);
+}
+
 class RegistrationPage extends StatelessWidget {
   const RegistrationPage({super.key});
 
@@ -45,12 +51,15 @@ class RegistrationPage extends StatelessWidget {
             );
         }
       },
-      child: AuthLayout(
+      child: BlocProvider(
+        create: (_) => RegistrationUiCubit(),
+        child: AuthLayout(
         title: 'Crea tu cuenta',
         subtitle: 'Registrate para acceder a todos los servicios digitales de prueba_itau.',
         form: const _RegistrationForm(),
         bottomAction: const _RegistrationBottomAction(),
         icon: Icons.person_add_alt_1,
+        ),
       ),
     );
   }
@@ -128,7 +137,6 @@ class _PasswordField extends StatefulWidget {
 }
 
 class _PasswordFieldState extends State<_PasswordField> {
-  bool _obscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -146,8 +154,10 @@ class _PasswordFieldState extends State<_PasswordField> {
           }
         }
 
-        return TextField(
-          obscureText: _obscure,
+        return BlocBuilder<RegistrationUiCubit, bool>(
+          builder: (context, obscure) {
+            return TextField(
+              obscureText: obscure,
           decoration: InputDecoration(
             labelText: 'Contraseña',
             prefixIcon: const Icon(Icons.lock_outline),
@@ -162,15 +172,15 @@ class _PasswordFieldState extends State<_PasswordField> {
               borderRadius: const BorderRadius.all(Radius.circular(14)),
               borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
             ),
-            suffixIcon: IconButton(
-              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-              onPressed: () => setState(() => _obscure = !_obscure),
-              tooltip: _obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                suffixIcon: IconButton(
+                  icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => context.read<RegistrationUiCubit>().toggle(),
+                  tooltip: obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                ),
             ),
-          ),
-          onChanged: (value) => context
-              .read<RegistrationBloc>()
-              .add(RegistrationPasswordChanged(value.trim())),
+            onChanged: (value) => context.read<RegistrationBloc>().add(RegistrationPasswordChanged(value.trim())),
+            );
+          },
         );
       },
     );
@@ -185,7 +195,6 @@ class _ConfirmPasswordField extends StatefulWidget {
 }
 
 class _ConfirmPasswordFieldState extends State<_ConfirmPasswordField> {
-  bool _obscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -201,8 +210,10 @@ class _ConfirmPasswordFieldState extends State<_ConfirmPasswordField> {
           }
         }
 
-        return TextField(
-          obscureText: _obscure,
+        return BlocBuilder<RegistrationUiCubit, bool>(
+          builder: (context, obscure) {
+            return TextField(
+              obscureText: obscure,
           decoration: InputDecoration(
             labelText: 'Confirmar Contraseña',
             prefixIcon: const Icon(Icons.verified_user_outlined),
@@ -217,15 +228,15 @@ class _ConfirmPasswordFieldState extends State<_ConfirmPasswordField> {
               borderRadius: const BorderRadius.all(Radius.circular(14)),
               borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
             ),
-            suffixIcon: IconButton(
-              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-              onPressed: () => setState(() => _obscure = !_obscure),
-              tooltip: _obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                suffixIcon: IconButton(
+                  icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => context.read<RegistrationUiCubit>().toggle(),
+                  tooltip: obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                ),
             ),
-          ),
-          onChanged: (value) => context
-              .read<RegistrationBloc>()
-              .add(RegistrationConfirmPasswordChanged(value.trim())),
+            onChanged: (value) => context.read<RegistrationBloc>().add(RegistrationConfirmPasswordChanged(value.trim())),
+            );
+          },
         );
       },
     );

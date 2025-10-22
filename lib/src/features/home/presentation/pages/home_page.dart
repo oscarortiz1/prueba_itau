@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/di/injection_container.dart';
@@ -53,7 +54,11 @@ class HomePage extends StatelessWidget {
                   children: [
                     HomeHeroSection(isWide: isWide),
                     const SizedBox(height: 32),
-                    const TransactionsSection(),
+                    BlocProvider(
+                      create: (_) =>
+                         TransactionsUiCubit(),
+                      child: const TransactionsSection(),
+                    ),
                     const SizedBox(height: 32),
                     const HomeShortcutCarousel(),
                   ],

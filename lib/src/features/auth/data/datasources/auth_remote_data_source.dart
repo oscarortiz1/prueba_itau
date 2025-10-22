@@ -118,7 +118,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         }
       }
     } catch (_) {
-      // Ignored: fall back to default message.
     }
     return 'Ocurrio un error. Intenta nuevamente.';
   }

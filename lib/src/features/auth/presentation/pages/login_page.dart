@@ -6,6 +6,12 @@ import '../../../../app/router/routes.dart';
 import '../widgets/auth_layout.dart';
 import '../bloc/login/login_bloc.dart';
 
+class LoginUiCubit extends Cubit<bool> {
+  LoginUiCubit() : super(true);
+
+  void toggle() => emit(!state);
+}
+
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
@@ -31,12 +37,15 @@ class LoginPage extends StatelessWidget {
             );
         }
       },
-      child: AuthLayout(
+      child: BlocProvider(
+        create: (_) => LoginUiCubit(),
+        child: AuthLayout(
         title: 'Bienvenido de nuevo',
         subtitle: 'Ingresa tus credenciales para continuar administrando tus productos.',
   form: const _LoginForm(),
   bottomAction: const _LoginBottomAction(),
         icon: Icons.login_rounded,
+        ),
       ),
     );
   }
@@ -74,7 +83,6 @@ class _EmailField extends StatelessWidget {
           if (state.email.isEmpty) {
             errorText = 'Requerido';
           } else if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
-            // show server/auth error on the field as well
             errorText = state.errorMessage;
           }
         }
@@ -112,8 +120,6 @@ class _PasswordField extends StatefulWidget {
 }
 
 class _PasswordFieldState extends State<_PasswordField> {
-  bool _obscure = true;
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LoginBloc, LoginState>(
@@ -124,15 +130,15 @@ class _PasswordFieldState extends State<_PasswordField> {
           if (state.password.isEmpty) {
             errorText = 'Requerido';
           } else if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
-            // avoid duplicating message on both fields unless specific
             if (state.errorMessage!.toLowerCase().contains('contrasena') || state.errorMessage!.toLowerCase().contains('credenciales')) {
               errorText = state.errorMessage;
             }
           }
         }
-
-        return TextField(
-          obscureText: _obscure,
+        return BlocBuilder<LoginUiCubit, bool>(
+          builder: (context, obscure) {
+            return TextField(
+              obscureText: obscure,
           decoration: InputDecoration(
             labelText: 'Contraseña',
             prefixIcon: const Icon(Icons.lock_outline),
@@ -148,13 +154,15 @@ class _PasswordFieldState extends State<_PasswordField> {
               borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 1.5),
             ),
             suffixIcon: IconButton(
-              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-              onPressed: () => setState(() => _obscure = !_obscure),
-              tooltip: _obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                  icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => context.read<LoginUiCubit>().toggle(),
+                  tooltip: obscure ? 'Mostrar contraseña' : 'Ocultar contraseña',
             ),
           ),
           onChanged: (value) =>
               context.read<LoginBloc>().add(LoginPasswordChanged(value.trim())),
+            );
+          },
         );
       },
     );
