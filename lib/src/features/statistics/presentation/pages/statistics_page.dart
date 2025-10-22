@@ -34,7 +34,8 @@ class _StatisticsView extends StatefulWidget {
 }
 
 class _StatisticsViewState extends State<_StatisticsView> {
-  static const int _txPageSize = 4;
+  static const int _mobilePageSize = 4;
+  static const int _webPageSize = 10;
 
   @override
   Widget build(BuildContext context) {
@@ -45,15 +46,16 @@ class _StatisticsViewState extends State<_StatisticsView> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 900;
+          final pageSize = isWide ? _webPageSize : _mobilePageSize;
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: isWide
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(flex: 2, child: _leftColumn(theme)),
+                      Expanded(flex: 2, child: _leftColumn(theme, includeTransactionsList: false, chartSize: 220)),
                       const SizedBox(width: 20),
-                      Expanded(flex: 3, child: _rightColumn(theme)),
+                      Expanded(flex: 3, child: _rightColumn(theme, pageSize: pageSize)),
                     ],
                   )
                 : Column(
@@ -63,7 +65,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
                       const SizedBox(height: 12),
                       _balanceCard(),
                       const SizedBox(height: 12),
-                      Expanded(child: SingleChildScrollView(child: _chartAndTransactionsMobile(theme))),
+                      Expanded(child: SingleChildScrollView(child: _chartAndTransactionsMobile(theme, pageSize: pageSize))),
                     ],
                   ),
           );
@@ -120,17 +122,42 @@ class _StatisticsViewState extends State<_StatisticsView> {
     });
   }
 
-  Widget _chartAndTransactionsMobile(ThemeData theme) {
+  Widget _chartAndTransactionsMobile(ThemeData theme, {required int pageSize}) {
     return Column(
       children: [
-        SizedBox(height: 300, child: Card(child: Padding(padding: const EdgeInsets.all(8.0), child: _transactionsListPanel()))),
+        SizedBox(
+          height: 300,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _transactionsListPanel(pageSize),
+            ),
+          ),
+        ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 180,
-          child: BlocBuilder<StatisticsBloc, StatisticsState>(builder: (context, state) {
-            if (state.totalIncomes == 0 && state.totalExpenses == 0) return Center(child: Text('No hay datos para mostrar', style: theme.textTheme.bodyLarge));
-            return Center(child: _IncomeExpensePieChart(incomes: state.totalIncomes, expenses: state.totalExpenses, size: 140));
-          }),
+          height: 200,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final usableHeight = constraints.maxHeight.isFinite ? constraints.maxHeight : 160.0;
+              final usableWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 160.0;
+              final chartSide = math.max(0.0, math.min(160.0, math.min(usableHeight, usableWidth)));
+              return BlocBuilder<StatisticsBloc, StatisticsState>(
+                builder: (context, state) {
+                  if (state.totalIncomes == 0 && state.totalExpenses == 0) {
+                    return Center(child: Text('No hay datos para mostrar', style: theme.textTheme.bodyLarge));
+                  }
+                  return Center(
+                    child: _IncomeExpensePieChart(
+                      incomes: state.totalIncomes,
+                      expenses: state.totalExpenses,
+                      size: chartSide,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -138,25 +165,40 @@ class _StatisticsViewState extends State<_StatisticsView> {
 
   
 
-  Widget _leftColumn(ThemeData theme) {
+  Widget _leftColumn(ThemeData theme, {required bool includeTransactionsList, required double chartSize}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _filtersCard(theme),
         const SizedBox(height: 12),
         _balanceCard(),
-        const SizedBox(height: 12),
-        SizedBox(height: 300, child: Card(child: Padding(padding: const EdgeInsets.all(8.0), child: _transactionsListPanel()))),
+        if (includeTransactionsList) ...[
+          const SizedBox(height: 12),
+          SizedBox(height: 300, child: Card(child: Padding(padding: const EdgeInsets.all(8.0), child: _transactionsListPanel(_mobilePageSize)))),
+        ],
         const SizedBox(height: 12),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: BlocBuilder<StatisticsBloc, StatisticsState>(
-              builder: (context, state) {
-                if (state.totalIncomes == 0 && state.totalExpenses == 0) {
-                  return Center(child: Text('No hay datos para mostrar', style: theme.textTheme.bodyLarge));
-                }
-                return Center(child: _IncomeExpensePieChart(incomes: state.totalIncomes, expenses: state.totalExpenses, size: 140));
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final usableHeight = constraints.maxHeight.isFinite ? constraints.maxHeight : chartSize;
+                final usableWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : chartSize;
+                final chartSide = math.max(0.0, math.min(chartSize, math.min(usableHeight, usableWidth)));
+                return BlocBuilder<StatisticsBloc, StatisticsState>(
+                  builder: (context, state) {
+                    if (state.totalIncomes == 0 && state.totalExpenses == 0) {
+                      return Center(child: Text('No hay datos para mostrar', style: theme.textTheme.bodyLarge));
+                    }
+                    return Center(
+                      child: _IncomeExpensePieChart(
+                        incomes: state.totalIncomes,
+                        expenses: state.totalExpenses,
+                        size: chartSide,
+                      ),
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -165,7 +207,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
     );
   }
 
-  Widget _rightColumn(ThemeData theme) {
+  Widget _rightColumn(ThemeData theme, {required int pageSize}) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -174,7 +216,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
           children: [
             Text('Movimientos', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            Expanded(child: _transactionsListPanel()),
+            Expanded(child: _transactionsListPanel(pageSize)),
           ],
         ),
       ),
@@ -249,20 +291,6 @@ class _StatisticsViewState extends State<_StatisticsView> {
                     child: Text(state.endDate == null ? 'Hasta' : _formatDate(state.endDate!)),
                   );
                 }),
-                FilledButton(
-                  onPressed: () {
-                    final bloc = context.read<StatisticsBloc>();
-                    final current = bloc.state;
-                    final st = current.startDate;
-                    final en = current.endDate;
-                    if (st != null && en != null && st.isAfter(en)) {
-                      _showValidationError(context, 'Rango de fechas inválido. Ajusta las fechas antes de aplicar.');
-                      return;
-                    }
-                    bloc.add(UpdateFilters(startDate: st, endDate: en));
-                  },
-                  child: const Text('Aplicar'),
-                ),
                 TextButton(
                   onPressed: () {
                     context.read<StatisticsBloc>().add(UpdateFilters(startDate: null, endDate: null));
@@ -277,7 +305,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
     );
   }
 
-  Widget _transactionsListPanel() {
+  Widget _transactionsListPanel(int pageSize) {
     return BlocBuilder<StatisticsBloc, StatisticsState>(builder: (context, sstate) {
       final txState = context.read<TransactionsBloc>().state;
       final all = txState.transactions;
@@ -290,13 +318,13 @@ class _StatisticsViewState extends State<_StatisticsView> {
       }).toList();
 
   final total = filtered.length;
-  final totalPages = total == 0 ? 1 : ((total - 1) ~/ _txPageSize) + 1;
+  final totalPages = total == 0 ? 1 : ((total - 1) ~/ pageSize) + 1;
   final currentPage = sstate.txPage;
   final maxPageIndex = totalPages - 1;
   final currentPageSafe = total == 0 ? 0 : currentPage.clamp(0, maxPageIndex);
 
-  final start = currentPageSafe * _txPageSize;
-  final end = math.min(start + _txPageSize, filtered.length);
+  final start = currentPageSafe * pageSize;
+  final end = math.min(start + pageSize, filtered.length);
       final pageItems = filtered.sublist(start, end);
 
       return Column(
