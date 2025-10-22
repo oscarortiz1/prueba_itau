@@ -259,8 +259,44 @@ class TransactionsSection extends StatelessWidget {
   }
 
   void _openCreateSheet(BuildContext context) {
+    final uiCubit = context.read<TransactionsUiCubit>();
+    uiCubit.initForm(type: TransactionType.expense, occurredAt: DateTime.now());
 
-    context.read<TransactionsUiCubit>().initForm(type: TransactionType.expense, occurredAt: DateTime.now());
+    if (kIsWeb) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) {
+          return BlocProvider.value(
+            value: uiCubit,
+            child: Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
+                  ),
+                  child: SingleChildScrollView(
+                    child: _TransactionFormSheet(
+                      onSubmit: (payload) {
+                        Navigator.of(dialogContext).pop();
+                        context.read<TransactionsBloc>().add(
+                          TransactionCreateRequested(payload),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -269,7 +305,7 @@ class TransactionsSection extends StatelessWidget {
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
         child: BlocProvider.value(
-          value: context.read<TransactionsUiCubit>(),
+          value: uiCubit,
           child: _TransactionFormSheet(
             onSubmit: (payload) {
               Navigator.of(sheetContext).pop();
@@ -284,8 +320,45 @@ class TransactionsSection extends StatelessWidget {
   }
 
   void _openEditSheet(BuildContext context, Transaction transaction) {
+    final uiCubit = context.read<TransactionsUiCubit>();
+    uiCubit.initForm(type: transaction.type, occurredAt: transaction.occurredAt);
 
-    context.read<TransactionsUiCubit>().initForm(type: transaction.type, occurredAt: transaction.occurredAt);
+    if (kIsWeb) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) {
+          return BlocProvider.value(
+            value: uiCubit,
+            child: Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
+                  ),
+                  child: SingleChildScrollView(
+                    child: _TransactionFormSheet.edit(
+                      transaction: transaction,
+                      onSubmit: (payload) {
+                        Navigator.of(dialogContext).pop();
+                        context.read<TransactionsBloc>().add(
+                          TransactionUpdateRequested(transaction.id, payload),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -294,7 +367,7 @@ class TransactionsSection extends StatelessWidget {
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
         child: BlocProvider.value(
-          value: context.read<TransactionsUiCubit>(),
+          value: uiCubit,
           child: _TransactionFormSheet.edit(
             transaction: transaction,
             onSubmit: (payload) {
