@@ -157,8 +157,8 @@ class TransactionsSection extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   theme.colorScheme.surface,
-                  theme.colorScheme.surfaceVariant.withOpacity(0.18),
-                  theme.colorScheme.primary.withOpacity(0.08),
+                  theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.18),
+                  theme.colorScheme.primary.withValues(alpha: 0.08),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -229,7 +229,7 @@ class TransactionsSection extends StatelessWidget {
                   const SizedBox(height: 24),
                   Divider(
                     height: 1,
-                    color: theme.dividerColor.withOpacity(0.2),
+                    color: theme.dividerColor.withValues(alpha: 0.2),
                   ),
                   const SizedBox(height: 24),
                   if (state.isLoading)
@@ -424,7 +424,7 @@ class _LoadingPlaceholder extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withOpacity(0.1),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
             ),
             child: SizedBox(
               width: 32,
@@ -472,13 +472,13 @@ class _EmptyState extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           colors: [
-            theme.colorScheme.surfaceVariant.withOpacity(0.32),
-            theme.colorScheme.surfaceVariant.withOpacity(0.12),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.32),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.12),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.24)),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -487,7 +487,7 @@ class _EmptyState extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withOpacity(0.12),
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
             ),
             child: Icon(
               Icons.auto_graph_outlined,
@@ -644,8 +644,8 @@ class _TransactionsContentState extends State<_TransactionsContent> {
     final activeFilters = _controllers
         .where((controller) => controller.text.trim().isNotEmpty)
         .length;
-    final panelColor = theme.colorScheme.surfaceVariant.withOpacity(
-      theme.brightness == Brightness.dark ? 0.28 : 0.14,
+    final panelColor = theme.colorScheme.surfaceContainerHighest.withValues(
+      alpha: theme.brightness == Brightness.dark ? 0.28 : 0.14,
     );
 
     return Column(
@@ -657,7 +657,7 @@ class _TransactionsContentState extends State<_TransactionsContent> {
             color: panelColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.18),
+              color: theme.colorScheme.outline.withValues(alpha: 0.18),
             ),
           ),
           child: Column(
@@ -684,7 +684,7 @@ class _TransactionsContentState extends State<_TransactionsContent> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.14),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -782,7 +782,7 @@ class _TransactionsContentState extends State<_TransactionsContent> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.error.withOpacity(0.12),
+                    color: theme.colorScheme.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -858,8 +858,8 @@ class _TransactionsContentState extends State<_TransactionsContent> {
         suffixIcon: _buildClearIcon(controller),
         errorText: errorText,
         filled: true,
-        fillColor: theme.colorScheme.surface.withOpacity(
-          theme.brightness == Brightness.dark ? 0.28 : 0.08,
+        fillColor: theme.colorScheme.surface.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.28 : 0.08,
         ),
         border: OutlineInputBorder(
           borderRadius: radius,
@@ -872,7 +872,7 @@ class _TransactionsContentState extends State<_TransactionsContent> {
         focusedBorder: OutlineInputBorder(
           borderRadius: radius,
           borderSide: BorderSide(
-            color: theme.colorScheme.primary.withOpacity(0.6),
+            color: theme.colorScheme.primary.withValues(alpha: 0.6),
           ),
         ),
       ),
@@ -974,9 +974,9 @@ class _NoResultsPlaceholder extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.1),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1142,9 +1142,9 @@ class _TotalsCarouselState extends State<_TotalsCarousel> {
                       height: 8,
                       width: isActive ? 22 : 8,
                       decoration: BoxDecoration(
-                        color: isActive
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.primary.withOpacity(0.3),
+            color: isActive
+              ? theme.colorScheme.primary
+              : theme.colorScheme.primary.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     );
@@ -1211,16 +1211,16 @@ class _TotalTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
             colors: [
-              slide.color.withOpacity(0.16),
-              slide.color.withOpacity(0.04),
+              slide.color.withValues(alpha: 0.16),
+              slide.color.withValues(alpha: 0.04),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: slide.color.withOpacity(0.14)),
+          border: Border.all(color: slide.color.withValues(alpha: 0.14)),
           boxShadow: [
             BoxShadow(
-              color: slide.color.withOpacity(0.1),
+              color: slide.color.withValues(alpha: 0.1),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -1235,7 +1235,7 @@ class _TotalTile extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: slide.color.withOpacity(0.2),
+                  color: slide.color.withValues(alpha: 0.2),
                 ),
                 child: Icon(slide.icon, color: slide.color, size: 22),
               ),
@@ -1243,7 +1243,7 @@ class _TotalTile extends StatelessWidget {
               Text(
                 slide.title,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.85),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1300,8 +1300,8 @@ class _CarouselArrow extends StatelessWidget {
           minimumSize: minSize,
           padding: EdgeInsets.zero,
           foregroundColor: theme.colorScheme.primary,
-          backgroundColor: theme.colorScheme.surface.withOpacity(
-            dense ? 0.9 : 0.95,
+          backgroundColor: theme.colorScheme.surface.withValues(
+            alpha: dense ? 0.9 : 0.95,
           ),
         ),
         tooltip: icon == Icons.chevron_left ? 'Anterior' : 'Siguiente',
@@ -1369,7 +1369,7 @@ class _TransactionsListState extends State<_TransactionsList> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: visibleTransactions.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (context, _) => const SizedBox(height: 12),
           itemBuilder: (_, index) {
             final transaction = visibleTransactions[index];
             final isIncome = transaction.type == TransactionType.income;
@@ -1382,8 +1382,7 @@ class _TransactionsListState extends State<_TransactionsList> {
 
                 Widget buildActions({required bool dense}) {
                   final amountText = Text(
-                    (isIncome ? '+' : '-') +
-                        _formatCurrency(transaction.amount),
+                    '${isIncome ? '+' : '-'}${_formatCurrency(transaction.amount)}',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: amountColor,
                       fontWeight: FontWeight.bold,
@@ -1553,10 +1552,9 @@ class _TransactionsListState extends State<_TransactionsList> {
 
 class _TransactionFormSheet extends StatefulWidget {
   const _TransactionFormSheet({
-    Key? key,
     this.transaction,
     required this.onSubmit,
-  }) : super(key: key);
+  });
 
   factory _TransactionFormSheet.edit({
     required Transaction transaction,

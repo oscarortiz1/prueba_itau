@@ -12,7 +12,9 @@ class NetworkInfoImpl implements NetworkInfo {
   NetworkInfoImpl(this._connectivity)
       : _statusStream = _connectivity
             .onConnectivityChanged
-            .map((event) => event != ConnectivityResult.none)
+            .map(
+              (events) => events.any((status) => status != ConnectivityResult.none),
+            )
             .distinct();
 
   final Connectivity _connectivity;
@@ -20,8 +22,8 @@ class NetworkInfoImpl implements NetworkInfo {
 
   @override
   Future<bool> get isConnected async {
-    final result = await _connectivity.checkConnectivity();
-    return result != ConnectivityResult.none;
+    final results = await _connectivity.checkConnectivity();
+    return results.any((status) => status != ConnectivityResult.none);
   }
 
   @override

@@ -11,7 +11,7 @@ import 'package:prueba_itau/src/features/transactions/presentation/widgets/trans
 class MockTransactionsBloc extends MockBloc<TransactionsEvent, TransactionsState>
     implements TransactionsBloc {}
 
-Transaction _transaction({required String id, required DateTime createdAt}) {
+Transaction buildTransaction({required String id, required DateTime createdAt}) {
   return Transaction(
     id: id,
     userId: 'user-1',
@@ -54,11 +54,12 @@ void main() {
     tearDown(() => bloc.close());
 
     testWidgets('shows loading placeholder while fetching data', (tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 2000);
-      tester.binding.window.devicePixelRatioTestValue = 1.0;
+      final view = tester.view;
+      view.physicalSize = const Size(1200, 2000);
+      view.devicePixelRatio = 1.0;
       addTearDown(() {
-        tester.binding.window.clearPhysicalSizeTestValue();
-        tester.binding.window.clearDevicePixelRatioTestValue();
+        view.resetPhysicalSize();
+        view.resetDevicePixelRatio();
       });
 
       const state = TransactionsState(status: TransactionsStatus.loading);
@@ -71,11 +72,12 @@ void main() {
     });
 
     testWidgets('shows empty state when there are no transactions', (tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 2000);
-      tester.binding.window.devicePixelRatioTestValue = 1.0;
+      final view = tester.view;
+      view.physicalSize = const Size(1200, 2000);
+      view.devicePixelRatio = 1.0;
       addTearDown(() {
-        tester.binding.window.clearPhysicalSizeTestValue();
-        tester.binding.window.clearDevicePixelRatioTestValue();
+        view.resetPhysicalSize();
+        view.resetDevicePixelRatio();
       });
 
       const state = TransactionsState(status: TransactionsStatus.success, transactions: []);
@@ -89,15 +91,16 @@ void main() {
     });
 
     testWidgets('renders the transaction list when data is available', (tester) async {
-      tester.binding.window.physicalSizeTestValue = const Size(1200, 2000);
-      tester.binding.window.devicePixelRatioTestValue = 1.0;
+      final view = tester.view;
+      view.physicalSize = const Size(1200, 2000);
+      view.devicePixelRatio = 1.0;
       addTearDown(() {
-        tester.binding.window.clearPhysicalSizeTestValue();
-        tester.binding.window.clearDevicePixelRatioTestValue();
+        view.resetPhysicalSize();
+        view.resetDevicePixelRatio();
       });
 
-      final newer = _transaction(id: '2', createdAt: DateTime(2024, 5, 12));
-      final older = _transaction(id: '1', createdAt: DateTime(2024, 5, 5));
+      final newer = buildTransaction(id: '2', createdAt: DateTime(2024, 5, 12));
+      final older = buildTransaction(id: '1', createdAt: DateTime(2024, 5, 5));
       final state = TransactionsState(
         status: TransactionsStatus.success,
         transactions: [newer, older],

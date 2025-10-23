@@ -67,7 +67,7 @@ void main() {
 		when(() => localDataSource.savePendingOperations(any())).thenAnswer((_) async {});
 	});
 
-	TransactionModel _transactionModel({
+	TransactionModel transactionModel({
 		required String id,
 		required DateTime createdAt,
 	}) {
@@ -86,8 +86,8 @@ void main() {
 
 	group('fetchTransactions', () {
 		test('returns remote transactions sorted by createdAt when online', () async {
-			final newer = _transactionModel(id: 'b', createdAt: DateTime(2024, 5, 10));
-			final older = _transactionModel(id: 'a', createdAt: DateTime(2024, 5, 1));
+			final newer = transactionModel(id: 'b', createdAt: DateTime(2024, 5, 10));
+			final older = transactionModel(id: 'a', createdAt: DateTime(2024, 5, 1));
 
 			when(() => remoteDataSource.fetchTransactions(token: any(named: 'token')))
 					.thenAnswer((_) async => [older, newer]);
@@ -103,8 +103,8 @@ void main() {
 		});
 
 		test('falls back to cached transactions when remote fails', () async {
-			final cachedNewer = _transactionModel(id: 'c', createdAt: DateTime(2024, 6, 3));
-			final cachedOlder = _transactionModel(id: 'd', createdAt: DateTime(2024, 4, 20));
+			final cachedNewer = transactionModel(id: 'c', createdAt: DateTime(2024, 6, 3));
+			final cachedOlder = transactionModel(id: 'd', createdAt: DateTime(2024, 4, 20));
 
 			when(() => remoteDataSource.fetchTransactions(token: any(named: 'token')))
 					.thenThrow(AppException('error'));

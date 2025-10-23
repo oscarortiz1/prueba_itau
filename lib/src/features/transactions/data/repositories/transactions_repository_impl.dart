@@ -79,6 +79,7 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
         await _removePendingForId(transaction.id);
         return transaction;
       } on NetworkException {
+        return _createOffline(payload);
       }
     }
 
@@ -98,6 +99,7 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
         await _removePendingForId(id);
         return transaction;
       } on NetworkException {
+        return _updateOffline(id, payload);
       }
     }
 
@@ -113,6 +115,7 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
         await _removePendingForId(id);
         return;
       } on NetworkException {
+        return _deleteOffline(id);
       }
     }
 

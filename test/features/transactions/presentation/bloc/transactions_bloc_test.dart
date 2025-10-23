@@ -51,7 +51,7 @@ void main() {
 		);
 	}
 
-	Transaction _transaction({
+	Transaction transaction({
 		required String id,
 		required DateTime createdAt,
 	}) {
@@ -92,8 +92,8 @@ void main() {
 
 		when(() => networkInfo.onStatusChange).thenAnswer((_) => connectionController.stream);
 		when(() => networkInfo.isConnected).thenAnswer((_) async => true);
-		when(() => createTransaction(any())).thenAnswer((_) async => _transaction(id: 'new', createdAt: DateTime.now()));
-		when(() => updateTransaction(any(), any())).thenAnswer((_) async => _transaction(id: 'updated', createdAt: DateTime.now()));
+		when(() => createTransaction(any())).thenAnswer((_) async => transaction(id: 'new', createdAt: DateTime.now()));
+		when(() => updateTransaction(any(), any())).thenAnswer((_) async => transaction(id: 'updated', createdAt: DateTime.now()));
 		when(() => deleteTransaction(any())).thenAnswer((_) async {});
 	});
 
@@ -108,8 +108,8 @@ void main() {
 		blocTest<TransactionsBloc, TransactionsState>(
 			'emits sorted transactions by createdAt',
 			build: () {
-					newer = _transaction(id: '2', createdAt: DateTime(2024, 5, 10));
-					older = _transaction(id: '1', createdAt: DateTime(2024, 5, 1));
+					newer = transaction(id: '2', createdAt: DateTime(2024, 5, 10));
+					older = transaction(id: '1', createdAt: DateTime(2024, 5, 1));
 				when(() => getTransactions()).thenAnswer((_) async => [older, newer]);
 				when(() => getPendingOperationsCount()).thenAnswer((_) async => 0);
 				return buildBloc();
@@ -134,8 +134,8 @@ void main() {
 		blocTest<TransactionsBloc, TransactionsState>(
 			'triggers sync when pending operations exist and connection returns',
 			build: () {
-					newer = _transaction(id: '4', createdAt: DateTime(2024, 7, 8));
-					older = _transaction(id: '3', createdAt: DateTime(2024, 6, 30));
+					newer = transaction(id: '4', createdAt: DateTime(2024, 7, 8));
+					older = transaction(id: '3', createdAt: DateTime(2024, 6, 30));
 				var count = 0;
 				when(() => getPendingOperationsCount()).thenAnswer((_) async {
 					if (count == 0) {

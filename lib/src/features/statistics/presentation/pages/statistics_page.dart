@@ -254,6 +254,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
                         firstDate: firstDate,
                         lastDate: lastDate,
                       );
+                      if (!context.mounted) return;
                       if (picked == null) return;
                       if (state.endDate != null && picked.isAfter(state.endDate!)) {
                         _showValidationError(context, 'La fecha desde no puede ser posterior a la fecha hasta.');
@@ -281,6 +282,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
                         firstDate: firstDate,
                         lastDate: lastDate,
                       );
+                      if (!context.mounted) return;
                       if (picked == null) return;
                       if (state.startDate != null && picked.isBefore(state.startDate!)) {
                         _showValidationError(context, 'La fecha hasta no puede ser anterior a la fecha desde.');
@@ -333,7 +335,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
           Expanded(
             child: ListView.separated(
               itemCount: pageItems.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 6),
+              separatorBuilder: (context, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
                 final tx = pageItems[index];
                 final isIncome = tx.type == TransactionType.income;
@@ -344,7 +346,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: (isIncome ? Colors.green : Colors.red).withOpacity(0.12),
+                        backgroundColor: (isIncome ? Colors.green : Colors.red).withValues(alpha: 0.12),
                         child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward, color: amountColor, size: 18),
                       ),
                       const SizedBox(width: 10),
@@ -359,7 +361,7 @@ class _StatisticsViewState extends State<_StatisticsView> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text((isIncome ? '+' : '-') + '\$ ${tx.amount.toStringAsFixed(2)}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: amountColor, fontWeight: FontWeight.w700)),
+                      Text('${isIncome ? '+' : '-'}\$ ${tx.amount.toStringAsFixed(2)}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: amountColor, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 );
