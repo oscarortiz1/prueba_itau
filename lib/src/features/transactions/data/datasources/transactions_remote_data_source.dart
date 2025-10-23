@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../domain/entities/transaction.dart';
@@ -30,9 +29,9 @@ abstract class TransactionsRemoteDataSource {
 }
 
 class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
-  TransactionsRemoteDataSourceImpl({required this.client, required this.baseUrl});
+  TransactionsRemoteDataSourceImpl({required this.dio, required this.baseUrl});
 
-  final http.Client client;
+  final Dio dio;
   final String baseUrl;
 
   Uri _buildUri(String path) => Uri.parse('$baseUrl/$path');
@@ -48,28 +47,25 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
     final uri = _buildUri('transactions');
 
     try {
-      final response = await client
-          .get(uri, headers: _headers(token))
-          .timeout(const Duration(seconds: 12));
+      final response = await dio.getUri(
+        uri,
+        options: Options(headers: _headers(token)),
+      );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decoded = _decodeJson(response.body);
-        if (decoded is List) {
-          return decoded
-              .whereType<Map<String, dynamic>>()
-              .map(TransactionModel.fromJson)
-              .toList();
-        }
-        throw AppException('Formato de respuesta invalido.');
+      final data = response.data;
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(TransactionModel.fromJson)
+            .toList();
       }
-
-      throw AppException(_extractMessage(response.body));
-      } on SocketException {
-        throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
-      } on TimeoutException {
-        throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
-    } on FormatException {
       throw AppException('Formato de respuesta invalido.');
+    } on DioException catch (error) {
+      throw _mapDioError(error);
+    } on SocketException {
+      throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
+    } on TimeoutException {
+      throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     }
   }
 
@@ -79,23 +75,33 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
     required TransactionCreatePayload payload,
   }) async {
     final uri = _buildUri('transactions');
-    final body = jsonEncode({
+    final payloadBody = {
       'type': payload.type.value,
       'title': payload.title,
       'amount': payload.amount,
       'category': payload.category,
       'occurredAt': payload.occurredAt.toUtc().toIso8601String(),
-    });
+    };
 
-    final response = await _postOrPatch(
-      request: () => client.post(uri, headers: _headers(token), body: body),
-    );
+    try {
+      final response = await dio.postUri(
+        uri,
+        data: payloadBody,
+        options: Options(headers: _headers(token)),
+      );
 
-    final decoded = _decodeJson(response.body);
-    if (decoded is Map<String, dynamic>) {
-      return TransactionModel.fromJson(decoded);
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return TransactionModel.fromJson(data);
+      }
+      throw AppException('Formato de respuesta invalido.');
+    } on DioException catch (error) {
+      throw _mapDioError(error);
+    } on SocketException {
+      throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
+    } on TimeoutException {
+      throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     }
-    throw AppException('Formato de respuesta invalido.');
   }
 
   @override
@@ -122,19 +128,25 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
       body['occurredAt'] = payload.occurredAt!.toUtc().toIso8601String();
     }
 
-    final response = await _postOrPatch(
-      request: () => client.patch(
+    try {
+      final response = await dio.patchUri(
         uri,
-        headers: _headers(token),
-        body: jsonEncode(body),
-      ),
-    );
+        data: body,
+        options: Options(headers: _headers(token)),
+      );
 
-    final decoded = _decodeJson(response.body);
-    if (decoded is Map<String, dynamic>) {
-      return TransactionModel.fromJson(decoded);
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return TransactionModel.fromJson(data);
+      }
+      throw AppException('Formato de respuesta invalido.');
+    } on DioException catch (error) {
+      throw _mapDioError(error);
+    } on SocketException {
+      throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
+    } on TimeoutException {
+      throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     }
-    throw AppException('Formato de respuesta invalido.');
   }
 
   @override
@@ -142,59 +154,47 @@ class TransactionsRemoteDataSourceImpl implements TransactionsRemoteDataSource {
     final uri = _buildUri('transactions/$id');
 
     try {
-      final response = await client
-          .delete(uri, headers: _headers(token))
-          .timeout(const Duration(seconds: 12));
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return;
-      }
-
-      throw AppException(_extractMessage(response.body));
-      } on SocketException {
-        throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
-      } on TimeoutException {
-        throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
+      await dio.deleteUri(
+        uri,
+        options: Options(headers: _headers(token)),
+      );
+    } on DioException catch (error) {
+      throw _mapDioError(error);
+    } on SocketException {
+      throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
+    } on TimeoutException {
+      throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     }
   }
 
-  Future<http.Response> _postOrPatch({required Future<http.Response> Function() request}) async {
-    try {
-      final response = await request().timeout(const Duration(seconds: 12));
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return response;
-      }
-
-      throw AppException(_extractMessage(response.body));
-      } on SocketException {
-        throw NetworkException('Sin conexion con el servidor. Verifica tu red.');
-      } on TimeoutException {
-        throw NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
+  AppException _mapDioError(DioException error) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return NetworkException('La solicitud tardo demasiado. Intenta nuevamente.');
     }
+
+    if (error.error is SocketException) {
+      return NetworkException('Sin conexion con el servidor. Verifica tu red.');
+    }
+
+    if (error.type == DioExceptionType.badResponse) {
+      final message = _extractMessage(error.response?.data);
+      return AppException(message);
+    }
+
+    return AppException('Ocurrio un error. Intenta nuevamente.');
   }
 
-  Object _decodeJson(String source) {
-    try {
-      return jsonDecode(source);
-    } catch (_) {
-      throw AppException('No se pudo interpretar la respuesta del servidor.');
-    }
-  }
-
-  String _extractMessage(String responseBody) {
-    try {
-      final decoded = jsonDecode(responseBody);
-      if (decoded is Map<String, dynamic>) {
-        final message = decoded['message'];
-        if (message is String) {
-          return message;
-        }
-        if (message is List) {
-          return message.join(', ');
-        }
+  String _extractMessage(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final message = data['message'];
+      if (message is String) {
+        return message;
       }
-    } catch (_) {
+      if (message is List) {
+        return message.join(', ');
+      }
     }
     return 'Ocurrio un error. Intenta nuevamente.';
   }

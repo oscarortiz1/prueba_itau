@@ -1,7 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/config/app_config.dart';
@@ -46,10 +46,18 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<SessionManager>(
       () => SessionManager(prefs: sl()),
     )
-    ..registerLazySingleton<http.Client>(http.Client.new)
+    ..registerLazySingleton<Dio>(
+      () => Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 12),
+          receiveTimeout: const Duration(seconds: 12),
+          sendTimeout: const Duration(seconds: 12),
+        ),
+      ),
+    )
     ..registerLazySingleton<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(
-        client: sl(),
+        dio: sl(),
         baseUrl: sl<AppConfig>().apiBaseUrl,
       ),
     )
@@ -60,7 +68,7 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton(() => RegisterUser(sl()))
     ..registerLazySingleton<TransactionsRemoteDataSource>(
       () => TransactionsRemoteDataSourceImpl(
-        client: sl(),
+        dio: sl(),
         baseUrl: sl<AppConfig>().apiBaseUrl,
       ),
     )

@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../models/auth_user_model.dart';
@@ -18,9 +17,9 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  AuthRemoteDataSourceImpl({required this.client, required this.baseUrl});
+  AuthRemoteDataSourceImpl({required this.dio, required this.baseUrl});
 
-  final http.Client client;
+  final Dio dio;
   final String baseUrl;
 
   Uri _buildUri(String path) => Uri.parse('$baseUrl/$path');
@@ -35,7 +34,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String email,
     required String password,
   }) async {
-    final response = await _post(
+    final data = await _post(
       uri: _buildUri('auth/login'),
       body: {
         'email': email,
@@ -43,7 +42,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       },
     );
 
-    final data = _decodeJson(response.body) as Map<String, dynamic>;
     final userJson = data['user'] as Map<String, dynamic>?;
     if (userJson == null) {
       throw AppException('Respuesta inesperada del servidor.');
@@ -59,7 +57,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String password,
     required String confirmPassword,
   }) async {
-    final response = await _post(
+    final data = await _post(
       uri: _buildUri('auth/register'),
       body: {
         'email': email,
@@ -68,7 +66,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       },
     );
 
-    final data = _decodeJson(response.body) as Map<String, dynamic>;
     final userJson = data['user'] as Map<String, dynamic>?;
     if (userJson == null) {
       throw AppException('Respuesta inesperada del servidor.');
@@ -77,39 +74,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     return AuthUserModel.fromJson(userJson);
   }
 
-  Future<http.Response> _post({required Uri uri, required Map<String, dynamic> body}) async {
+  Future<Map<String, dynamic>> _post({
+    required Uri uri,
+    required Map<String, dynamic> body,
+  }) async {
     try {
-      final response = await client
-          .post(uri, headers: _headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 12));
+      final response = await dio.postUri(
+        uri,
+        data: body,
+        options: Options(headers: _headers),
+      );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return response;
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
       }
 
-      throw AppException(_extractMessage(response.body));
+      throw AppException('Formato de respuesta invalido.');
+    } on DioException catch (error) {
+      throw AppException(_mapDioError(error));
     } on SocketException {
       throw AppException('Sin conexion con el servidor. Verifica tu red.');
     } on TimeoutException {
       throw AppException('La solicitud tardo demasiado. Intenta nuevamente.');
-    } on FormatException {
-      throw AppException('Formato de respuesta invalido.');
     }
   }
 
-  Object _decodeJson(String source) {
-    try {
-      return jsonDecode(source);
-    } catch (_) {
-      throw AppException('No se pudo interpretar la respuesta del servidor.');
+  String _mapDioError(DioException error) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return 'La solicitud tardo demasiado. Intenta nuevamente.';
     }
-  }
 
-  String _extractMessage(String responseBody) {
-    try {
-      final decoded = jsonDecode(responseBody);
-      if (decoded is Map<String, dynamic>) {
-        final message = decoded['message'];
+    if (error.type == DioExceptionType.badResponse) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final message = data['message'];
         if (message is String) {
           return message;
         }
@@ -117,8 +118,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           return message.join(', ');
         }
       }
-    } catch (_) {
+      return 'Ocurrio un error. Intenta nuevamente.';
     }
+
+    if (error.error is SocketException) {
+      return 'Sin conexion con el servidor. Verifica tu red.';
+    }
+
     return 'Ocurrio un error. Intenta nuevamente.';
   }
 }
