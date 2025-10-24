@@ -53,55 +53,67 @@ class TransactionsRealtimeDataSource {
     _disposeSocket();
 
     final url = '$baseUrl/transactions';
-    final socket = io.io(
-      url,
-      io.OptionBuilder()
-          .setTransports(['websocket'])
-          .enableForceNew()
-          .setAuth({'token': token})
-          .build(),
-    );
+    try {
+      final socket = io.io(
+        url,
+        io.OptionBuilder()
+            .setTransports(['websocket'])
+            .enableForceNew()
+            .setAuth({'token': token})
+            .build(),
+      );
 
-    socket.onConnect((_) {
-    });
+      socket.onConnect((_) {
+      });
 
-    socket.onError((error) {
-      _controller.addError(error ?? 'socket_error');
-    });
+      void handleError(Object? error) {
+        if (!_controller.isClosed) {
+          _controller.addError(error ?? 'socket_error');
+        }
+      }
 
-    socket.onDisconnect((_) {
-    });
+      socket
+        ..onError(handleError)
+        ..onConnectError(handleError)
+        ..onDisconnect((_) {
+        });
 
-    socket.on('transaction.created', (data) {
-      final payload = _asJson(data);
-      if (payload != null) {
+      socket.on('transaction.created', (data) {
+        final payload = _asJson(data);
+        if (payload != null) {
+          _controller.add(TransactionsRealtimeMessage(
+            type: TransactionsRealtimeMessageType.created,
+            payload: payload,
+          ));
+        }
+      });
+
+      socket.on('transaction.updated', (data) {
+        final payload = _asJson(data);
+        if (payload != null) {
+          _controller.add(TransactionsRealtimeMessage(
+            type: TransactionsRealtimeMessageType.updated,
+            payload: payload,
+          ));
+        }
+      });
+
+      socket.on('transaction.deleted', (data) {
+        final payload = _asJson(data);
         _controller.add(TransactionsRealtimeMessage(
-          type: TransactionsRealtimeMessageType.created,
+          type: TransactionsRealtimeMessageType.deleted,
           payload: payload,
         ));
+      });
+
+      socket.connect();
+      _socket = socket;
+    } on Object catch (error, stackTrace) {
+      if (!_controller.isClosed) {
+        _controller.addError(error, stackTrace);
       }
-    });
-
-    socket.on('transaction.updated', (data) {
-      final payload = _asJson(data);
-      if (payload != null) {
-        _controller.add(TransactionsRealtimeMessage(
-          type: TransactionsRealtimeMessageType.updated,
-          payload: payload,
-        ));
-      }
-    });
-
-    socket.on('transaction.deleted', (data) {
-      final payload = _asJson(data);
-      _controller.add(TransactionsRealtimeMessage(
-        type: TransactionsRealtimeMessageType.deleted,
-        payload: payload,
-      ));
-    });
-
-    socket.connect();
-    _socket = socket;
+      _disposeSocket();
+    }
   }
 
   void _disposeSocket() {
