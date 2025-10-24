@@ -1686,6 +1686,7 @@ class _TransactionFormSheetState extends State<_TransactionFormSheet> {
                         initialDate: initial,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2100),
+                        locale: const Locale('es'),
                       );
                       if (picked != null) {
                         final prev = cubit.state.formOccurredAt ?? DateTime.now();
