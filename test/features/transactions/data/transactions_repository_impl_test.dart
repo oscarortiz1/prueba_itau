@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -7,6 +9,7 @@ import 'package:prueba_itau/src/core/session/session_manager.dart';
 import 'package:prueba_itau/src/features/auth/domain/entities/auth_user.dart';
 import 'package:prueba_itau/src/features/transactions/data/datasources/transactions_local_data_source.dart';
 import 'package:prueba_itau/src/features/transactions/data/datasources/transactions_remote_data_source.dart';
+import 'package:prueba_itau/src/features/transactions/data/datasources/transactions_realtime_data_source.dart';
 import 'package:prueba_itau/src/features/transactions/data/models/pending_transaction_operation_model.dart';
 import 'package:prueba_itau/src/features/transactions/data/models/transaction_model.dart';
 import 'package:prueba_itau/src/features/transactions/data/repositories/transactions_repository_impl.dart';
@@ -19,6 +22,9 @@ class MockTransactionsRemoteDataSource extends Mock
 class MockTransactionsLocalDataSource extends Mock
 		implements TransactionsLocalDataSource {}
 
+class MockTransactionsRealtimeDataSource extends Mock
+		implements TransactionsRealtimeDataSource {}
+
 class MockSessionManager extends Mock implements SessionManager {}
 
 class MockNetworkInfo extends Mock implements NetworkInfo {}
@@ -27,8 +33,10 @@ void main() {
 	late TransactionsRepositoryImpl repository;
 	late MockTransactionsRemoteDataSource remoteDataSource;
 	late MockTransactionsLocalDataSource localDataSource;
+	late MockTransactionsRealtimeDataSource realtimeDataSource;
 	late MockSessionManager sessionManager;
 	late MockNetworkInfo networkInfo;
+	late StreamController<TransactionsRealtimeMessage> realtimeController;
 
 	const authUser = AuthUser(id: 'user-1', email: 'test@example.com', token: 'token');
 
@@ -48,16 +56,15 @@ void main() {
 	setUp(() {
 		remoteDataSource = MockTransactionsRemoteDataSource();
 		localDataSource = MockTransactionsLocalDataSource();
+		realtimeDataSource = MockTransactionsRealtimeDataSource();
 		sessionManager = MockSessionManager();
 		networkInfo = MockNetworkInfo();
+		realtimeController = StreamController<TransactionsRealtimeMessage>.broadcast();
 
-		repository = TransactionsRepositoryImpl(
-			remoteDataSource: remoteDataSource,
-			localDataSource: localDataSource,
-			sessionManager: sessionManager,
-			networkInfo: networkInfo,
-		);
-
+		when(() => realtimeDataSource.messages).thenAnswer((_) => realtimeController.stream);
+		when(() => realtimeDataSource.connect(any())).thenAnswer((_) {});
+		when(() => realtimeDataSource.disconnect()).thenAnswer((_) {});
+		when(() => sessionManager.addListener(any())).thenAnswer((_) {});
 		when(() => sessionManager.token).thenReturn(authUser.token);
 		when(() => sessionManager.currentUser).thenReturn(authUser);
 		when(() => networkInfo.isConnected).thenAnswer((_) async => true);
@@ -65,6 +72,18 @@ void main() {
 		when(() => localDataSource.loadTransactions()).thenAnswer((_) async => []);
 		when(() => localDataSource.saveTransactions(any())).thenAnswer((_) async {});
 		when(() => localDataSource.savePendingOperations(any())).thenAnswer((_) async {});
+
+		repository = TransactionsRepositoryImpl(
+			remoteDataSource: remoteDataSource,
+			localDataSource: localDataSource,
+			realtimeDataSource: realtimeDataSource,
+			sessionManager: sessionManager,
+			networkInfo: networkInfo,
+		);
+	});
+
+	tearDown(() {
+		realtimeController.close();
 	});
 
 	TransactionModel transactionModel({

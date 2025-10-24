@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/network/network_info.dart';
 import '../../../../core/session/session_manager.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/transaction_payload.dart';
+import '../../domain/entities/transaction_realtime_event.dart';
 import '../../domain/repositories/transactions_repository.dart';
 import '../datasources/transactions_local_data_source.dart';
 import '../datasources/transactions_remote_data_source.dart';
+import '../datasources/transactions_realtime_data_source.dart';
 import '../models/pending_transaction_operation_model.dart';
 import '../models/transaction_model.dart';
 
@@ -13,17 +17,32 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   TransactionsRepositoryImpl({
     required TransactionsRemoteDataSource remoteDataSource,
     required TransactionsLocalDataSource localDataSource,
+    required TransactionsRealtimeDataSource realtimeDataSource,
     required SessionManager sessionManager,
     required NetworkInfo networkInfo,
   })  : _remoteDataSource = remoteDataSource,
         _localDataSource = localDataSource,
+        _realtimeDataSource = realtimeDataSource,
         _sessionManager = sessionManager,
-        _networkInfo = networkInfo;
+        _networkInfo = networkInfo {
+    _realtimeDataSource.messages.listen(
+      (message) => _handleRealtimeMessage(message),
+      onError: (error, stackTrace) => _realtimeController.addError(error, stackTrace),
+    );
+
+    _sessionListener = _handleSessionChanged;
+    _sessionManager.addListener(_sessionListener);
+    _handleSessionChanged();
+  }
 
   final TransactionsRemoteDataSource _remoteDataSource;
   final TransactionsLocalDataSource _localDataSource;
+  final TransactionsRealtimeDataSource _realtimeDataSource;
   final SessionManager _sessionManager;
   final NetworkInfo _networkInfo;
+  final StreamController<TransactionRealtimeEvent> _realtimeController =
+      StreamController<TransactionRealtimeEvent>.broadcast();
+  late final void Function() _sessionListener;
 
   String get _token {
     final token = _sessionManager.token;
@@ -134,6 +153,15 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
     return pending.length;
   }
 
+  @override
+  Stream<TransactionRealtimeEvent> watchTransactionsRealtime() {
+    final token = _sessionManager.token;
+    if (token != null && token.isNotEmpty) {
+      _realtimeDataSource.connect(token);
+    }
+    return _realtimeController.stream;
+  }
+
   Future<void> _upsertLocal(TransactionModel model) async {
     await _updateLocalTransactions((transactions) {
       final index = transactions.indexWhere((item) => item.id == model.id);
@@ -160,6 +188,56 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
     if (filtered.length != pending.length) {
       await _localDataSource.savePendingOperations(filtered);
     }
+  }
+
+  Future<void> _handleRealtimeMessage(TransactionsRealtimeMessage message) async {
+    switch (message.type) {
+      case TransactionsRealtimeMessageType.created:
+      case TransactionsRealtimeMessageType.updated:
+        final payload = message.payload;
+        if (payload == null) {
+          return;
+        }
+        try {
+          final model = TransactionModel.fromJson(payload);
+          await _upsertLocal(model);
+          final event = message.type == TransactionsRealtimeMessageType.created
+              ? TransactionRealtimeEvent.created(model)
+              : TransactionRealtimeEvent.updated(model);
+          _realtimeController.add(event);
+        } catch (_) {
+        }
+        break;
+      case TransactionsRealtimeMessageType.deleted:
+        final id = _extractId(message.payload);
+        if (id == null) {
+          return;
+        }
+        await _removeLocal(id);
+        await _removePendingForId(id);
+        _realtimeController.add(TransactionRealtimeEvent.deleted(id));
+        break;
+    }
+  }
+
+  void _handleSessionChanged() {
+    final token = _sessionManager.token;
+    if (token != null && token.isNotEmpty) {
+      _realtimeDataSource.connect(token);
+    } else {
+      _realtimeDataSource.disconnect();
+    }
+  }
+
+  String? _extractId(Map<String, dynamic>? payload) {
+    if (payload == null) {
+      return null;
+    }
+    final value = payload['id'] ?? payload['_id'];
+    if (value is String && value.isNotEmpty) {
+      return value;
+    }
+    return null;
   }
 
   Future<List<TransactionModel>> _syncPendingTransactionsInternal() async {

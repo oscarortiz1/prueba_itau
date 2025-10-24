@@ -7,12 +7,14 @@ import '../../../../core/errors/app_exception.dart';
 import '../../../../core/network/network_info.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/transaction_payload.dart';
+import '../../domain/entities/transaction_realtime_event.dart';
 import '../../domain/usecases/create_transaction.dart';
 import '../../domain/usecases/delete_transaction.dart';
 import '../../domain/usecases/get_pending_operations_count.dart';
 import '../../domain/usecases/get_transactions.dart';
 import '../../domain/usecases/sync_pending_transactions.dart';
 import '../../domain/usecases/update_transaction.dart';
+import '../../domain/usecases/watch_transactions_realtime.dart';
 
 part 'transactions_event.dart';
 part 'transactions_state.dart';
@@ -26,6 +28,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     required SyncPendingTransactions syncPendingTransactions,
     required GetPendingOperationsCount getPendingOperationsCount,
     required NetworkInfo networkInfo,
+    required WatchTransactionsRealtime watchTransactionsRealtime,
   })  : _getTransactions = getTransactions,
         _createTransaction = createTransaction,
         _updateTransaction = updateTransaction,
@@ -33,6 +36,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
         _syncPendingTransactions = syncPendingTransactions,
         _getPendingOperationsCount = getPendingOperationsCount,
         _networkInfo = networkInfo,
+        _watchTransactionsRealtime = watchTransactionsRealtime,
         super(const TransactionsState()) {
     on<TransactionsLoaded>(_onLoaded);
     on<TransactionCreateRequested>(_onCreateRequested);
@@ -40,9 +44,14 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     on<TransactionDeleteRequested>(_onDeleteRequested);
     on<TransactionsConnectionChanged>(_onConnectionChanged);
     on<TransactionsSyncRequested>(_onSyncRequested);
+    on<TransactionsRealtimeEventReceived>(_onRealtimeEventReceived);
 
     _connectionSubscription = _networkInfo.onStatusChange.listen(
       (isConnected) => add(TransactionsConnectionChanged(isConnected)),
+    );
+
+    _realtimeSubscription = _watchTransactionsRealtime().listen(
+      (event) => add(TransactionsRealtimeEventReceived(event)),
     );
   }
 
@@ -53,11 +62,14 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
   final SyncPendingTransactions _syncPendingTransactions;
   final GetPendingOperationsCount _getPendingOperationsCount;
   final NetworkInfo _networkInfo;
+  final WatchTransactionsRealtime _watchTransactionsRealtime;
   late final StreamSubscription<bool> _connectionSubscription;
+  late final StreamSubscription<TransactionRealtimeEvent> _realtimeSubscription;
 
   @override
   Future<void> close() {
     _connectionSubscription.cancel();
+    _realtimeSubscription.cancel();
     return super.close();
   }
 
@@ -254,6 +266,45 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
         errorMessage: 'No se pudo sincronizar las transacciones pendientes.',
         pendingOperations: pendingCount,
       ));
+    }
+  }
+
+  void _onRealtimeEventReceived(
+    TransactionsRealtimeEventReceived event,
+    Emitter<TransactionsState> emit,
+  ) {
+    final current = List<Transaction>.from(state.transactions);
+    switch (event.event.type) {
+      case TransactionRealtimeEventType.created:
+      case TransactionRealtimeEventType.updated:
+        final transaction = event.event.transaction;
+        if (transaction == null) {
+          return;
+        }
+        final index = current.indexWhere((item) => item.id == transaction.id);
+        if (index != -1) {
+          current[index] = transaction;
+        } else {
+          current.add(transaction);
+        }
+        emit(state.copyWith(
+          transactions: _sorted(current),
+          status: TransactionsStatus.success,
+          clearError: true,
+        ));
+        break;
+      case TransactionRealtimeEventType.deleted:
+        final id = event.event.transactionId;
+        if (id == null) {
+          return;
+        }
+        current.removeWhere((item) => item.id == id);
+        emit(state.copyWith(
+          transactions: _sorted(current),
+          status: TransactionsStatus.success,
+          clearError: true,
+        ));
+        break;
     }
   }
 

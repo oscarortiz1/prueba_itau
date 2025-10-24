@@ -7,12 +7,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:prueba_itau/src/core/network/network_info.dart';
 import 'package:prueba_itau/src/features/transactions/domain/entities/transaction.dart';
 import 'package:prueba_itau/src/features/transactions/domain/entities/transaction_payload.dart';
+import 'package:prueba_itau/src/features/transactions/domain/entities/transaction_realtime_event.dart';
 import 'package:prueba_itau/src/features/transactions/domain/usecases/create_transaction.dart';
 import 'package:prueba_itau/src/features/transactions/domain/usecases/delete_transaction.dart';
 import 'package:prueba_itau/src/features/transactions/domain/usecases/get_pending_operations_count.dart';
 import 'package:prueba_itau/src/features/transactions/domain/usecases/get_transactions.dart';
 import 'package:prueba_itau/src/features/transactions/domain/usecases/sync_pending_transactions.dart';
 import 'package:prueba_itau/src/features/transactions/domain/usecases/update_transaction.dart';
+import 'package:prueba_itau/src/features/transactions/domain/usecases/watch_transactions_realtime.dart';
 import 'package:prueba_itau/src/features/transactions/presentation/bloc/transactions_bloc.dart';
 
 class MockGetTransactions extends Mock implements GetTransactions {}
@@ -29,6 +31,8 @@ class MockGetPendingOperationsCount extends Mock implements GetPendingOperations
 
 class MockNetworkInfo extends Mock implements NetworkInfo {}
 
+class MockWatchTransactionsRealtime extends Mock implements WatchTransactionsRealtime {}
+
 void main() {
 	late MockGetTransactions getTransactions;
 	late MockCreateTransaction createTransaction;
@@ -37,6 +41,7 @@ void main() {
 	late MockSyncPendingTransactions syncPendingTransactions;
 	late MockGetPendingOperationsCount getPendingOperationsCount;
 	late MockNetworkInfo networkInfo;
+		late MockWatchTransactionsRealtime watchTransactionsRealtime;
 	late StreamController<bool> connectionController;
 
 	TransactionsBloc buildBloc() {
@@ -48,6 +53,7 @@ void main() {
 			syncPendingTransactions: syncPendingTransactions,
 			getPendingOperationsCount: getPendingOperationsCount,
 			networkInfo: networkInfo,
+			watchTransactionsRealtime: watchTransactionsRealtime,
 		);
 	}
 
@@ -88,10 +94,14 @@ void main() {
 		syncPendingTransactions = MockSyncPendingTransactions();
 		getPendingOperationsCount = MockGetPendingOperationsCount();
 		networkInfo = MockNetworkInfo();
+			watchTransactionsRealtime = MockWatchTransactionsRealtime();
 		connectionController = StreamController<bool>.broadcast();
 
 		when(() => networkInfo.onStatusChange).thenAnswer((_) => connectionController.stream);
 		when(() => networkInfo.isConnected).thenAnswer((_) async => true);
+				when(() => watchTransactionsRealtime()).thenAnswer(
+					(_) => Stream<TransactionRealtimeEvent>.empty(),
+				);
 		when(() => createTransaction(any())).thenAnswer((_) async => transaction(id: 'new', createdAt: DateTime.now()));
 		when(() => updateTransaction(any(), any())).thenAnswer((_) async => transaction(id: 'updated', createdAt: DateTime.now()));
 		when(() => deleteTransaction(any())).thenAnswer((_) async {});

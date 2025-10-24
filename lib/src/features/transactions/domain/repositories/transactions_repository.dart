@@ -1,5 +1,6 @@
 import '../entities/transaction.dart';
 import '../entities/transaction_payload.dart';
+import '../entities/transaction_realtime_event.dart';
 
 abstract class TransactionsRepository {
   Future<List<Transaction>> fetchTransactions();
@@ -13,4 +14,6 @@ abstract class TransactionsRepository {
   Future<List<Transaction>> syncPendingTransactions();
 
   Future<int> pendingOperationsCount();
+
+  Stream<TransactionRealtimeEvent> watchTransactionsRealtime();
 }

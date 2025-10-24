@@ -56,3 +56,12 @@ class TransactionDeleteRequested extends TransactionsEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class TransactionsRealtimeEventReceived extends TransactionsEvent {
+  const TransactionsRealtimeEventReceived(this.event);
+
+  final TransactionRealtimeEvent event;
+
+  @override
+  List<Object?> get props => [event];
+}

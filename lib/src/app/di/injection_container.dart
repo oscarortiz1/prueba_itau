@@ -16,6 +16,7 @@ import '../../features/auth/presentation/bloc/login/login_bloc.dart';
 import '../../features/auth/presentation/bloc/registration/registration_bloc.dart';
 import '../../features/transactions/data/datasources/transactions_local_data_source.dart';
 import '../../features/transactions/data/datasources/transactions_remote_data_source.dart';
+import '../../features/transactions/data/datasources/transactions_realtime_data_source.dart';
 import '../../features/transactions/data/repositories/transactions_repository_impl.dart';
 import '../../features/transactions/domain/repositories/transactions_repository.dart';
 import '../../features/transactions/domain/usecases/create_transaction.dart';
@@ -24,6 +25,7 @@ import '../../features/transactions/domain/usecases/get_pending_operations_count
 import '../../features/transactions/domain/usecases/get_transactions.dart';
 import '../../features/transactions/domain/usecases/sync_pending_transactions.dart';
 import '../../features/transactions/domain/usecases/update_transaction.dart';
+import '../../features/transactions/domain/usecases/watch_transactions_realtime.dart';
 import '../../features/transactions/presentation/bloc/transactions_bloc.dart';
 import '../router/app_router.dart';
 
@@ -72,6 +74,9 @@ Future<void> configureDependencies() async {
         baseUrl: sl<AppConfig>().apiBaseUrl,
       ),
     )
+    ..registerLazySingleton<TransactionsRealtimeDataSource>(
+      () => TransactionsRealtimeDataSource(baseUrl: sl<AppConfig>().socketBaseUrl),
+    )
     ..registerLazySingleton<TransactionsLocalDataSource>(
       () => TransactionsLocalDataSourceImpl(prefs: sl()),
     )
@@ -79,6 +84,7 @@ Future<void> configureDependencies() async {
       () => TransactionsRepositoryImpl(
         remoteDataSource: sl(),
         localDataSource: sl(),
+        realtimeDataSource: sl(),
         sessionManager: sl(),
         networkInfo: sl(),
       ),
@@ -89,6 +95,7 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton(() => DeleteTransaction(sl()))
     ..registerLazySingleton(() => SyncPendingTransactions(sl()))
     ..registerLazySingleton(() => GetPendingOperationsCount(sl()))
+    ..registerLazySingleton(() => WatchTransactionsRealtime(sl()))
     ..registerFactory(() => LoginBloc(loginUser: sl(), sessionManager: sl()))
     ..registerFactory(() => RegistrationBloc(registerUser: sl()))
     ..registerFactory(
@@ -100,6 +107,7 @@ Future<void> configureDependencies() async {
         syncPendingTransactions: sl(),
         getPendingOperationsCount: sl(),
         networkInfo: sl(),
+        watchTransactionsRealtime: sl(),
       ),
     )
     ..registerLazySingleton(() => AppRouter(sl));
