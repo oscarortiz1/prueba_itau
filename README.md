@@ -1,29 +1,43 @@
 # Prueba Itaú – Frontend
 
-Aplicación Flutter que implementa una experiencia offline-first para la gestión de transacciones.
+Documento breve (README) explicando las decisiones técnicas tomadas para el cliente móvil/web.
 
-## Decisiones técnicas clave
+Aplicación Flutter enfocada en experiencia offline-first, sincronización transparente y autenticación segura sobre la API NestJS.
 
-- **Arquitectura limpia + BLoC**: la capa de presentación usa `TransactionsBloc` y demás BLoCs para aislar el UI de la lógica de negocio y facilitar pruebas. Las capas `domain` y `data` exponen casos de uso y repositorios con contratos claros.
-- **Inyección de dependencias con GetIt**: `lib/src/app/di/injection_container.dart` registra data sources, repositorios, casos de uso y BLoCs. Esto permite intercambiar implementaciones (por ejemplo, reemplazar el datasource local en tests) sin tocar el resto del código.
-- **Soporte offline y sincronización automática**: `TransactionsRepositoryImpl` decide cuándo trabajar contra la API o contra el cache local (`SharedPreferences`). Al perder conexión se generan IDs locales y se encola la operación en `PendingTransactionOperationModel`; cuando el dispositivo recupera red, `SyncPendingTransactions` reprocesa la cola.
-- **Detección de conectividad reactiva**: `NetworkInfoImpl` envuelve `connectivity_plus` y expone un stream usado por el `TransactionsBloc` para reaccionar a cambios de red y gatillar sincronizaciones sin intervención del usuario.
-- **Normalización de fechas**: todos los timestamps se envían al backend en UTC y se convierten a hora local al mostrarlos, eliminando desfasajes por zona horaria.
-- **Cobertura de pruebas**: se añadieron unit tests para el repositorio, el BLoC y widget tests para `TransactionsSection`, asegurando que los estados principal, vacío y de datos se rendericen correctamente.
+## Novedades recientes
 
-## Ejecutar el proyecto
+- API base unificada: el `AppConfig` resuelve `http://localhost:3000/api/v1` (o `http://10.0.2.2:3000/api/v1` en emulador Android) y se inyecta vía GetIt en todos los data sources.
+- Cliente HTTP migrado a `dio`, con timeouts configurados y traducción consistente de errores a `AppException` para mostrar mensajes amigables.
+- Manejo de sesión centralizado en `SessionManager`, que guarda tokens JWT en `SharedPreferences` y los comparte con los repositorios.
+- Sincronización offline resiliente: las operaciones pendientes se almacenan como `PendingTransactionOperationModel` y `SyncPendingTransactions` las reintenta cuando vuelve la conectividad.
+- Estado global con `flutter_bloc` para auth y transacciones, aprovechando `connectivity_plus` para disparar sincronizaciones automáticas.
+- Lints actualizados (`flutter_lints` v6) y código alineado con las reglas; `flutter analyze` queda limpio.
 
-```bash
-flutter pub get
-flutter run
-```
+## Arquitectura en breve
 
-## Ejecutar pruebas
+- **Presentación**: Widgets consumen BLoCs (`LoginBloc`, `TransactionsBloc`, etc.) registrados en `lib/src/app/di/injection_container.dart`.
+- **Dominio**: Casos de uso (`GetTransactions`, `LoginUser`, …) orquestan los flujos sin depender de Flutter.
+- **Datos**: Repositorios como `TransactionsRepositoryImpl` combinan `TransactionsRemoteDataSource` (HTTP) y `TransactionsLocalDataSource` (cache + cola offline).
+- **Configuración**: `_resolveApiHost()` adapta el host según plataforma, evitando ajustes manuales al alternar entre web, emulador y escritorio.
 
-```bash
-flutter test
-```
+## Puesta en marcha
+
+1. Ten el backend corriendo en `http://localhost:3000` (`npm run start:dev` en `prueba_itau_backend`).
+2. Instala dependencias y lanza la app:
+
+	```bash
+	flutter pub get
+	flutter run
+	```
+
+	En VS Code puedes usar el target que prefieras (web, emulador Android/iOS o desktop).
+
+## Autenticación y pruebas
+
+- El login (`POST /api/v1/auth/login`) devuelve el JWT que `SessionManager` persiste; la sesión se restaura automáticamente al abrir la app.
+- Ejecuta las pruebas con `flutter test`; la suite cubre repositorios, BLoCs y widgets clave.
+- Para validar la conexión con el backend puedes usar el comando `flutter test --plain-name "transactions"` y revisar que no fallen por red.
 
 ---
 
-Para las decisiones técnicas del backend, revisa `../prueba_itau_backend/README.md`.
+Para más detalles del backend, revisa `../prueba_itau_backend/README.md`.
