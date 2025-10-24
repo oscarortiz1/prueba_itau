@@ -11,6 +11,7 @@ Aplicación Flutter enfocada en experiencia offline-first, sincronización trans
 - Manejo de sesión centralizado en `SessionManager`, que guarda tokens JWT en `SharedPreferences` y los comparte con los repositorios.
 - Sincronización offline resiliente: las operaciones pendientes se almacenan como `PendingTransactionOperationModel` y `SyncPendingTransactions` las reintenta cuando vuelve la conectividad.
 - Estado global con `flutter_bloc` para auth y transacciones, aprovechando `connectivity_plus` para disparar sincronizaciones automáticas.
+- Transacciones en tiempo real: `TransactionsRepositoryImpl` se suscribe al socket usando `TransactionsRealtimeDataSource`; difunde eventos creados/actualizados/eliminados a `TransactionsBloc`, que actualiza la lista sin refrescos manuales.
 - Lints actualizados (`flutter_lints` v6) y código alineado con las reglas; `flutter analyze` queda limpio.
 
 ## Arquitectura en breve
@@ -31,6 +32,13 @@ Aplicación Flutter enfocada en experiencia offline-first, sincronización trans
 	```
 
 	En VS Code puedes usar el target que prefieras (web, emulador Android/iOS o desktop).
+
+## Transacciones en tiempo real
+
+- Mantén el backend NestJS activo (`npm run start:dev`) para habilitar el gateway de websockets.
+- Inicia sesión en la app; el `SessionManager` inyecta el token al socket y `TransactionsRealtimeDataSource` establece la conexión.
+- Crea, actualiza o elimina transacciones desde la app o vía API externa (Postman/cURL). `TransactionsBloc` reflejará los cambios al instante sin recargar la pantalla.
+- Puedes simular modo offline: desconecta tu red, realiza operaciones (quedarán en cola), vuelve a conectarte y verifica que la sincronización y los eventos en vivo se apliquen tras reconectar.
 
 ## Autenticación y pruebas
 
